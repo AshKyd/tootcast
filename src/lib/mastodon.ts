@@ -104,10 +104,16 @@ export async function getMastoClient() {
 	});
 }
 
+export type StatusVisibility = 'public' | 'unlisted' | 'private' | 'direct';
+
 /**
  * Uploads a voice note to Mastodon.
  */
-export async function postVoiceNote(blob: Blob, text?: string): Promise<void> {
+export async function postVoiceNote(
+	blob: Blob,
+	text?: string,
+	visibility: StatusVisibility = 'public'
+): Promise<void> {
 	const client = await getMastoClient();
 	if (!client) throw new Error('Not authenticated with Mastodon.');
 
@@ -156,13 +162,15 @@ export async function postVoiceNote(blob: Blob, text?: string): Promise<void> {
 		await client.v1.statuses.create({
 			status: statusText,
 			mediaIds: [attachment.id],
-			visibility: 'direct' // Still posting as direct for testing
+			visibility
 		});
 		console.log('✅ Mastodon: Status posted');
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('❌ Mastodon API Error:', err);
 		// Log more details if available safely
-		if (err.data) console.error('Error Data:', err.data);
+		if (err && typeof err === 'object' && 'data' in err) {
+			console.error('Error Data:', (err as { data: unknown }).data);
+		}
 		throw err;
 	}
 }

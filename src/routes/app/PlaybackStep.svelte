@@ -1,11 +1,28 @@
 <script lang="ts">
-	import { Panel, Padding, Button, LoaderOverlay } from 'svelte-akui';
-	import { postVoiceNote } from '$lib/mastodon';
+	import { Button, LoaderOverlay, InputGroup, Panel, Select } from 'svelte-akui';
+	import { postVoiceNote, type StatusVisibility } from '$lib/mastodon';
 	import { settings } from '$lib/settings.svelte';
+	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
+	import { fade } from 'svelte/transition';
 
 	let { recorder, onsuccess, ondiscard, onerror } = $props();
 
 	let isUploading = $state(false);
+	let visibility = $state<StatusVisibility>(settings.data.defaultVisibility);
+
+	$effect(() => {
+		if (settings.isLoaded && visibility !== settings.data.defaultVisibility) {
+			settings.data.defaultVisibility = visibility;
+			settings.save();
+		}
+	});
+
+	const visibilityOptions: { value: StatusVisibility; label: string }[] = [
+		{ value: 'public', label: 'Public' },
+		{ value: 'unlisted', label: 'Unlisted' },
+		{ value: 'private', label: 'Followers only' },
+		{ value: 'direct', label: 'Direct Message' }
+	];
 
 	async function handleSend() {
 		if (!recorder.audioBlob) return;
@@ -29,7 +46,7 @@
 
 		try {
 			const statusText = settings.data.addHashtag ? '#VoiceNote' : '';
-			await postVoiceNote(recorder.audioBlob, statusText);
+			await postVoiceNote(recorder.audioBlob, statusText, visibility);
 			recorder.discard();
 			onsuccess();
 			console.log('✅ Send successful');
@@ -49,21 +66,77 @@
 	}
 </script>
 
-<Panel colour="regular" class="preview-card max-w-sm w-full">
-	{#if isUploading}
-		<LoaderOverlay message="Uploading voice note..." />
-	{/if}
-	<Padding size="l">
-		<h2>Preview note</h2>
-		<audio src={recorder.audioUrl} controls class="mb-10 w-full"></audio>
+{#if isUploading}
+	<LoaderOverlay message="Uploading voice note..." />
+{/if}
 
-		<div class="flex gap-4">
-			<Button variant="regular" class="flex-1" onclick={handleDiscard} disabled={isUploading}>
-				Discard
-			</Button>
-			<Button variant="accent" class="flex-1" onclick={handleSend} disabled={isUploading}>
-				Send to Mastodon
-			</Button>
+<div class="playback-step" transition:fade>
+	<div class="player-wrapper">
+		<AudioPlayer src={recorder.audioUrl} />
+	</div>
+
+	<Panel>
+		<div class="visibility-control mb-8">
+			<Select
+				id="visibility-select"
+				bind:value={visibility}
+				options={visibilityOptions}
+				placeholder="Post Visibility"
+				disabled={isUploading}
+			/>
 		</div>
-	</Padding>
-</Panel>
+
+		<div class="actions">
+			<InputGroup style="width: 100%;">
+				<Button
+					variant="regular"
+					icon="arrow-counterclockwise"
+					iconPosition="only"
+					label="Record again"
+					onclick={handleDiscard}
+					disabled={isUploading}
+					size="large"
+					style="flex: initial;"
+				/>
+				<Button
+					variant="accent"
+					icon="send"
+					iconPosition="right"
+					label="Post it!"
+					onclick={handleSend}
+					disabled={isUploading}
+					size="large"
+					style="min-width:12em;"
+				/>
+			</InputGroup>
+		</div>
+	</Panel>
+</div>
+
+<style>
+	.playback-step {
+		position: absolute;
+		bottom: 10dvh;
+		left: 1rem;
+		width: calc(100% - 2rem);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem;
+	}
+
+	.player-wrapper {
+		width: 100%;
+		max-width: 600px;
+		margin-bottom: 2.5rem;
+	}
+
+	.actions {
+		width: 100%;
+	}
+
+	.mb-8 {
+		margin-bottom: 0.5rem;
+	}
+</style>

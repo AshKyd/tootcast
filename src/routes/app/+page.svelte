@@ -2,22 +2,10 @@
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth.svelte';
 	import { logout } from '$lib/mastodon';
-	import Waveform from '$lib/components/Waveform.svelte';
-	import Scrim from '$lib/components/Scrim.svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import {
-		Panel,
-		Padding,
-		Button,
-		LoaderOverlay,
-		InfoBox,
-		Badge,
-		Header,
-		MenuButton,
-		MenuItem
-	} from 'svelte-akui';
+	import { Button, Badge, Header, MenuButton, MenuItem } from 'svelte-akui';
 	import { recorder } from '$lib/recorder.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import RecordStep from './RecordStep.svelte';
@@ -83,8 +71,8 @@
 		<div class="main-content">
 			{#if success}
 				<div class="success-message text-center" in:fly={{ y: 20 }}>
-					<h2 class="text-5xl font-extrabold mb-4 tracking-tight">Sent! 👂✨</h2>
-					<p class="text-xl opacity-60 mb-10">Your voice note is now on Mastodon.</p>
+					<h2 class="text-5xl font-extrabold mb-4 tracking-tight">Sent!</h2>
+					<p class="text-xl opacity-60 mb-10">Your voice note is now on fedi.</p>
 					<Button
 						variant="accent"
 						size="large"

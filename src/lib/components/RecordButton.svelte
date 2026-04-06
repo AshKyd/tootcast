@@ -101,6 +101,10 @@
 		z-index: 1000;
 		margin: 0;
 		padding: 0;
+
+		@media (prefers-color-scheme: light) {
+			background: #a84cd29e;
+		}
 	}
 
 	/* Stable, non-scaling hit area */

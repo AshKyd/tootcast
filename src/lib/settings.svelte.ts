@@ -1,16 +1,19 @@
 import { browser } from '$app/environment';
 import { db } from './db';
+import type { StatusVisibility } from './mastodon';
 
 export interface UserSettings {
 	deviceId: string;
 	noiseCancellation: boolean;
 	addHashtag: boolean;
+	defaultVisibility: StatusVisibility;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
 	deviceId: '',
 	noiseCancellation: false,
-	addHashtag: true
+	addHashtag: true,
+	defaultVisibility: 'unlisted'
 };
 
 class Settings {

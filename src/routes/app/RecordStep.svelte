@@ -1,6 +1,5 @@
 <script lang="ts">
 	import RecordButton from '$lib/components/RecordButton.svelte';
-	import Scrim from '$lib/components/Scrim.svelte';
 	import Waveform from '$lib/components/Waveform.svelte';
 	import { InfoBox } from 'svelte-akui';
 	import { fade } from 'svelte/transition';
@@ -16,13 +15,11 @@
 	}
 </script>
 
-<Scrim isVisible={recorder.isRecording} />
-
 {#if recorder.isRecording && recorder.analyser}
 	<Waveform analyser={recorder.analyser} />
 {/if}
 
-<div class="record-step">
+<div class="record-step" transition:fade>
 	{#if error || recorder.error}
 		<div class="error-container w-full max-w-sm" transition:fade>
 			<InfoBox variant="error" title="Action failed">
@@ -31,7 +28,13 @@
 		</div>
 	{/if}
 	<p>
-		{recorder.isRecording ? 'Listening...' : 'Hold down to record your voice note.'}
+		{#if recorder.status == 'initializing'}
+			Warming up the recorder…
+		{:else if recorder.isRecording}
+			Listening…
+		{:else}
+			Hold down to record your voice note.
+		{/if}
 	</p>
 
 	<RecordButton
