@@ -33,17 +33,6 @@
 		console.group('🎤 Diagnostic: Send Voice Note');
 		console.log('Blob Type:', recorder.audioBlob.type);
 		console.log('Blob Size:', (recorder.audioBlob.size / 1024).toFixed(2), 'KB');
-
-		// Trigger diagnostic download
-		const downloadUrl = URL.createObjectURL(recorder.audioBlob);
-		const a = document.createElement('a');
-		a.href = downloadUrl;
-		a.download = `debug_voice_${Date.now()}.${recorder.audioBlob.type.includes('ogg') ? 'ogg' : 'webm'}`;
-		console.log('Triggering diagnostic download:', a.download);
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-
 		isUploading = true;
 		onerror(null);
 
