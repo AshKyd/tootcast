@@ -38,10 +38,10 @@
 
 		try {
 			const statusText = settings.data.addHashtag ? '#VoiceNote' : '';
-			await postVoiceNote(recorder.audioBlob, statusText, visibility);
+			const status = await postVoiceNote(recorder.audioBlob, statusText, visibility);
 			await recorder.clearStore();
 			recorder.discard();
-			onsuccess();
+			onsuccess(status.url);
 			console.log('✅ Send successful');
 		} catch (err: unknown) {
 			const errObject = err as Error;

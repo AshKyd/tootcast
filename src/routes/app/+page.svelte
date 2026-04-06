@@ -5,7 +5,16 @@
 	import { fade, fly } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { Button, Badge, Header, MenuButton, MenuItem } from 'svelte-akui';
+	import {
+		Button,
+		Badge,
+		Header,
+		MenuButton,
+		MenuItem,
+		Panel,
+		Padding,
+		InputGroup
+	} from 'svelte-akui';
 	import { recorder } from '$lib/recorder.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import RecordStep from './RecordStep.svelte';
@@ -15,6 +24,7 @@
 	let isSettingsOpen = $state(false);
 	let error = $state<string | null>(null);
 	let success = $state(false);
+	let lastPostUrl = $state<string | null | undefined>(null);
 
 	onMount(async () => {
 		await auth.init();
@@ -69,37 +79,59 @@
 		</MenuButton>
 	</Header>
 
-		{#if isSettingsOpen}
-			<SettingsModal onClose={() => (isSettingsOpen = false)} />
-		{/if}
+	{#if isSettingsOpen}
+		<SettingsModal onClose={() => (isSettingsOpen = false)} />
+	{/if}
 
-		<div class="main-content">
-			{#if success}
-				<div class="success-message text-center" in:fly={{ y: 20 }}>
-					<h2 class="text-5xl font-extrabold mb-4 tracking-tight">Sent!</h2>
-					<p class="text-xl opacity-60 mb-10">Your voice note is now on fedi.</p>
-					<Button
-						variant="accent"
-						size="large"
-						onclick={() => {
-							recorder.discard();
-							success = false;
-						}}
-					>
-						Record Another
-					</Button>
-				</div>
-			{:else if recorder.audioUrl}
-				<PlaybackStep
-					{recorder}
-					onsuccess={() => (success = true)}
-					ondiscard={() => (success = false)}
-					onerror={(msg: string | null) => (error = msg)}
-				/>
-			{:else}
-				<RecordStep {recorder} {error} />
-			{/if}
-		</div>
+	<div class="main-content">
+		{#if success}
+			<div class="success-screen" in:fly={{ y: 20 }}>
+				<Panel>
+					<Padding size="l">
+						<div class="text-center">
+							<h2 class="text-5xl font-extrabold mb-4 tracking-tight">Sent!</h2>
+							<p class="text-xl opacity-60 mb-10">Your voice note is now on fedi.</p>
+
+							<InputGroup style="width: 100%;min-width:300px;margin-top:1rem;">
+								<Button
+									variant="regular"
+									label="View Post"
+									href={lastPostUrl || undefined}
+									target="_blank"
+									size="large"
+									disabled={!lastPostUrl}
+									style="flex: 1;"
+								/>
+								<Button
+									variant="accent"
+									label="Close"
+									size="large"
+									onclick={() => {
+										recorder.discard();
+										success = false;
+										lastPostUrl = null;
+									}}
+									style="flex: 1;"
+								/>
+							</InputGroup>
+						</div>
+					</Padding>
+				</Panel>
+			</div>
+		{:else if recorder.audioUrl}
+			<PlaybackStep
+				{recorder}
+				onsuccess={(url: string | null | undefined) => {
+					success = true;
+					lastPostUrl = url;
+				}}
+				ondiscard={() => (success = false)}
+				onerror={(msg: string | null) => (error = msg)}
+			/>
+		{:else}
+			<RecordStep {recorder} {error} />
+		{/if}
+	</div>
 </div>
 
 <style>

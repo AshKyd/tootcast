@@ -12,6 +12,11 @@ export interface UserSession {
 	instance: string;
 }
 
+export interface Status {
+	url?: string | null;
+	[key: string]: any;
+}
+
 const SCOPES = 'read write:statuses write:media';
 const REDIRECT_URI = typeof window !== 'undefined' ? `${window.location.origin}/callback` : '';
 
@@ -113,7 +118,7 @@ export async function postVoiceNote(
 	blob: Blob,
 	text?: string,
 	visibility: StatusVisibility = 'public'
-): Promise<void> {
+): Promise<Status> {
 	const client = await getMastoClient();
 	if (!client) throw new Error('Not authenticated with Mastodon.');
 
@@ -159,12 +164,13 @@ export async function postVoiceNote(
 
 		const statusText = text ?? '#VoiceNote';
 
-		await client.v1.statuses.create({
+		const status = await client.v1.statuses.create({
 			status: statusText,
 			mediaIds: [attachment.id],
 			visibility
 		});
 		console.log('✅ Mastodon: Status posted');
+		return status;
 	} catch (err: unknown) {
 		console.error('❌ Mastodon API Error:', err);
 		// Log more details if available safely

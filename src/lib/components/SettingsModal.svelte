@@ -92,7 +92,7 @@
 					<label class="control-row">
 						<div class="control-label">
 							<span class="title">Append #VoiceNote</span>
-							<Small>Include the hashtag in every post.</Small>
+							<Small>Include the hashtag in posts so we can find them in the app.</Small>
 						</div>
 						<input
 							type="checkbox"
