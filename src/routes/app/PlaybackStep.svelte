@@ -77,6 +77,7 @@
 
 	<Panel>
 		<div class="visibility-control mb-8">
+			<label for="visibility-select" class="sr-only">Post Visibility</label>
 			<Select
 				id="visibility-select"
 				bind:value={visibility}
