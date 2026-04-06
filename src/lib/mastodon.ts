@@ -31,13 +31,13 @@ export async function getAppConfig(instance: string): Promise<AppConfig> {
 		clientName: 'Big Ears',
 		redirectUris: REDIRECT_URI,
 		scopes: SCOPES,
-		website: window.location.origin,
+		website: window.location.origin
 	});
 
 	const config: AppConfig = {
 		clientId: app.clientId || '',
 		clientSecret: app.clientSecret || '',
-		instance: cleanInstance,
+		instance: cleanInstance
 	};
 
 	await db.set(cacheKey, config);
@@ -53,7 +53,7 @@ export async function getAuthUrl(instance: string): Promise<string> {
 		client_id: config.clientId,
 		response_type: 'code',
 		redirect_uri: REDIRECT_URI,
-		scope: SCOPES,
+		scope: SCOPES
 	});
 
 	return `https://${config.instance}/oauth/authorize?${params.toString()}`;
@@ -74,7 +74,7 @@ export async function exchangeCode(instance: string, code: string): Promise<User
 
 	const response = await fetch(`https://${config.instance}/oauth/token`, {
 		method: 'POST',
-		body: formData,
+		body: formData
 	});
 
 	if (!response.ok) {
@@ -84,7 +84,7 @@ export async function exchangeCode(instance: string, code: string): Promise<User
 	const data = await response.json();
 	const session: UserSession = {
 		accessToken: data.access_token,
-		instance: config.instance,
+		instance: config.instance
 	};
 
 	await db.set('session', session);
@@ -100,7 +100,7 @@ export async function getMastoClient() {
 
 	return createRestAPIClient({
 		url: `https://${session.instance}`,
-		accessToken: session.accessToken,
+		accessToken: session.accessToken
 	});
 }
 
@@ -117,7 +117,7 @@ export async function postVoiceNote(
 	const client = await getMastoClient();
 	if (!client) throw new Error('Not authenticated with Mastodon.');
 
-	// Mastodon is picky about MIME types. 
+	// Mastodon is picky about MIME types.
 	// CHROME FIX: WebM is technically a video container.
 	// Reporting it as 'audio/opus' with a '.opus' extension helps bypass the video-spoof-detector.
 	let mimeType = blob.type.split(';')[0];
@@ -156,8 +156,8 @@ export async function postVoiceNote(
 
 		// 2. Post Status with Media
 		console.log('📡 Mastodon: Posting status...');
-		
-		const statusText = text ? `${text} #bigears` : 'A voice note from #bigears 👂';
+
+		const statusText = text ?? '#VoiceNote';
 
 		await client.v1.statuses.create({
 			status: statusText,
