@@ -18,6 +18,7 @@
 
 	onMount(async () => {
 		await auth.init();
+		await recorder.loadFromStore();
 	});
 
 	async function handleLogout() {

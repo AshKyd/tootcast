@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { settings } from './settings.svelte';
+import { db } from './db';
 
 export type RecorderStatus = 'idle' | 'initializing' | 'ready' | 'recording' | 'stopping' | 'error';
 
@@ -201,7 +202,7 @@ class Recorder {
 	/**
 	 * Reset the current voice note state and ensure resources are disconnected.
 	 */
-	discard() {
+	async discard() {
 		this.stop(); 
 		this.audioBlob = null;
 		this.audioUrl = null;
@@ -209,6 +210,41 @@ class Recorder {
 		this.mediaRecorder = null;
 		// disconnect handles turning state to idle
 		if (this.status !== 'idle') this.disconnect();
+		await this.clearStore();
+	}
+
+	/**
+	 * Persist the current audio blob to IndexedDB.
+	 */
+	async saveToStore() {
+		if (!this.audioBlob) return;
+		console.log('💾 Persisting audio to IndexedDB...');
+		await db.set('pending_audio_blob', this.audioBlob);
+		await db.set('pending_audio_type', this.audioBlob.type);
+	}
+
+	/**
+	 * Load any persisted audio blob from IndexedDB.
+	 */
+	async loadFromStore() {
+		if (!browser) return;
+		
+		const blob = await db.get<Blob>('pending_audio_blob');
+		const type = await db.get<string>('pending_audio_type');
+
+		if (blob && type) {
+			console.log('📂 Restoring audio from IndexedDB...', blob.size, type);
+			this.audioBlob = new Blob([blob], { type });
+			this.audioUrl = URL.createObjectURL(this.audioBlob);
+		}
+	}
+
+	/**
+	 * Clear the persisted audio from IndexedDB.
+	 */
+	async clearStore() {
+		await db.delete('pending_audio_blob');
+		await db.delete('pending_audio_type');
 	}
 }
 

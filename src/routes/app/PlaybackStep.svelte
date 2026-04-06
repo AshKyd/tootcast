@@ -39,6 +39,7 @@
 		try {
 			const statusText = settings.data.addHashtag ? '#VoiceNote' : '';
 			await postVoiceNote(recorder.audioBlob, statusText, visibility);
+			await recorder.clearStore();
 			recorder.discard();
 			onsuccess();
 			console.log('✅ Send successful');
@@ -108,7 +109,10 @@
 						icon="box-arrow-in-right"
 						iconPosition="right"
 						label="Login to Post"
-						onclick={() => goto(resolve('/login'))}
+						onclick={async () => {
+							await recorder.saveToStore();
+							goto(resolve('/login'));
+						}}
 						disabled={isUploading}
 						size="large"
 						style="min-width:12em;"
