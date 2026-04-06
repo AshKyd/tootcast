@@ -40,7 +40,7 @@
 
 	{#if error}
 		<p class="text-xl text-red-500 mb-4">{error}</p>
-		<button class="px-6 py-2 bg-white text-black rounded-lg font-bold" onclick={() => goto(resolve('/'))}>
+		<button class="px-6 py-2 bg-white text-black rounded-lg font-bold" onclick={() => goto(resolve('/login'))}>
 			Go Back
 		</button>
 	{/if}

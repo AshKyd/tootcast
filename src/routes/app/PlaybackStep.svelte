@@ -3,6 +3,9 @@
 	import { postVoiceNote, type StatusVisibility } from '$lib/mastodon';
 	import { settings } from '$lib/settings.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
+	import { auth } from '$lib/auth.svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
 
 	let { recorder, onsuccess, ondiscard, onerror } = $props();
@@ -99,16 +102,29 @@
 					size="large"
 					style="flex: initial;"
 				/>
-				<Button
-					variant="accent"
-					icon="send"
-					iconPosition="right"
-					label="Post it!"
-					onclick={handleSend}
-					disabled={isUploading}
-					size="large"
-					style="min-width:12em;"
-				/>
+				{#if auth.session}
+					<Button
+						variant="accent"
+						icon="send"
+						iconPosition="right"
+						label="Post it!"
+						onclick={handleSend}
+						disabled={isUploading}
+						size="large"
+						style="min-width:12em;"
+					/>
+				{:else}
+					<Button
+						variant="accent"
+						icon="box-arrow-in-right"
+						iconPosition="right"
+						label="Login to Post"
+						onclick={() => goto(resolve('/login'))}
+						disabled={isUploading}
+						size="large"
+						style="min-width:12em;"
+					/>
+				{/if}
 			</InputGroup>
 		</div>
 	</Panel>

@@ -18,15 +18,12 @@
 
 	onMount(async () => {
 		await auth.init();
-		if (!auth.session) {
-			goto(resolve('/'));
-		}
 	});
 
 	async function handleLogout() {
 		await logout();
 		await auth.setSession(null);
-		goto(resolve('/'));
+		goto(resolve('/login'));
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -45,24 +42,31 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if auth.session}
-	<div class="app-ui" in:fade>
-		<Header>
-			{#snippet title()}
-				<Badge variant="regular" radius="m">BIG EARS</Badge>
-			{/snippet}
+<div class="app-ui" in:fade>
+	<Header>
+		{#snippet title()}
+			<Badge variant="regular" radius="m">BIG EARS</Badge>
+		{/snippet}
 
-			<MenuButton icon="list" variant="regular" size="small" origin="bottom-right">
-				{#snippet menu()}
-					<MenuItem label="Settings" icon="gear" onclick={() => (isSettingsOpen = true)} />
+		<MenuButton icon="list" variant="regular" size="small" origin="bottom-right">
+			{#snippet menu()}
+				<MenuItem label="Settings" icon="gear" onclick={() => (isSettingsOpen = true)} />
+				{#if auth.session}
 					<MenuItem
 						label="Logout (@{auth.session?.instance})"
 						icon="box-arrow-right"
 						onclick={handleLogout}
 					/>
-				{/snippet}
-			</MenuButton>
-		</Header>
+				{:else}
+					<MenuItem
+						label="Login"
+						icon="box-arrow-in-right"
+						onclick={() => goto(resolve('/login'))}
+					/>
+				{/if}
+			{/snippet}
+		</MenuButton>
+	</Header>
 
 		{#if isSettingsOpen}
 			<SettingsModal onClose={() => (isSettingsOpen = false)} />
@@ -95,8 +99,7 @@
 				<RecordStep {recorder} {error} />
 			{/if}
 		</div>
-	</div>
-{/if}
+</div>
 
 <style>
 	.app-ui {

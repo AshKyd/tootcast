@@ -33,33 +33,27 @@
 </script>
 
 <div class="instance-selector">
-	<Padding size="m">
-		<p class="selector-title">Sign in with your Mastodon instance to start recording.</p>
+	<p class="selector-title">Sign in with your Mastodon instance to start recording.</p>
 
-		<Field label="Instance URL" hint="e.g. mastodon.social">
-			<InputGroup joined size="large">
-				<TextInput
-					type="url"
-					bind:value={instance}
-					placeholder="mastodon.social"
-					disabled={loading}
-					onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && handleLogin()}
-				/>
-				<Button
-					variant="accent"
-					onclick={handleLogin}
-					disabled={loading || !instance}
-					{loading}
-				>
-					Login
-				</Button>
-			</InputGroup>
-		</Field>
+	<Field label="Instance URL" for="instance-domain">
+		<InputGroup joined size="large">
+			<TextInput
+				id="instance-domain"
+				type="url"
+				bind:value={instance}
+				placeholder="mastodon.social"
+				disabled={loading}
+				onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && handleLogin()}
+			/>
+			<Button variant="accent" onclick={handleLogin} disabled={loading || !instance} {loading}>
+				Login
+			</Button>
+		</InputGroup>
+	</Field>
 
-		{#if error}
-			<p class="error-text">{error}</p>
-		{/if}
-	</Padding>
+	{#if error}
+		<p class="error-text">{error}</p>
+	{/if}
 </div>
 
 <style>
