@@ -22,7 +22,7 @@
 </script>
 
 <svelte:head>
-	<title>Big Ears - Radio Voice Notes for Mastodon</title>
+	<title>TootCast - Radio Voice Notes for Mastodon</title>
 	<meta name="description" content="Dead simple voice notes for Mastodon." />
 </svelte:head>
 

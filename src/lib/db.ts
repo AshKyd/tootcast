@@ -8,7 +8,7 @@ class MiniDB {
 	private version: number;
 	private db: IDBDatabase | null = null;
 
-	constructor(dbName = 'bigears_db', storeName = 'kv', version = 1) {
+	constructor(dbName = 'tootcast_db', storeName = 'kv', version = 1) {
 		this.dbName = dbName;
 		this.storeName = storeName;
 		this.version = version;

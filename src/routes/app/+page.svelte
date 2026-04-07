@@ -56,7 +56,7 @@
 <div class="app-ui" in:fade>
 	<Header>
 		{#snippet title()}
-			<Badge variant="regular" radius="m">BIG EARS</Badge>
+			<Badge variant="regular" radius="m">TOOTCAST</Badge>
 		{/snippet}
 
 		<MenuButton icon="list" variant="regular" size="small" origin="bottom-right">

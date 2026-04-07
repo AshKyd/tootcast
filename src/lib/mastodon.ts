@@ -33,7 +33,7 @@ export async function getAppConfig(instance: string): Promise<AppConfig> {
 
 	const client = createRestAPIClient({ url: `https://${cleanInstance}` });
 	const app = await client.v1.apps.create({
-		clientName: 'Big Ears',
+		clientName: 'TootCast',
 		redirectUris: REDIRECT_URI,
 		scopes: SCOPES,
 		website: window.location.origin
@@ -155,7 +155,7 @@ export async function postVoiceNote(
 		console.log('📡 Mastodon: Uploading media...');
 		const attachment = await client.v1.media.create({
 			file,
-			description: 'Voice note recorded with Big Ears'
+			description: 'Voice note recorded with TootCast'
 		});
 		console.log('✅ Mastodon: Media uploaded', attachment.id);
 
