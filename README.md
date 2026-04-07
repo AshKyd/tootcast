@@ -29,6 +29,22 @@ npm run dev
 npm run dev -- --open
 ```
 
+## Deployment
+
+TootCast is configured for static hosting using Docker and Traefik. It uses the SvelteKit static adapter in SPA mode.
+
+### Local Development
+`npm run dev`
+
+### Production Build (Docker)
+Ensure you have Docker and Docker Compose installed.
+
+```bash
+docker compose up --build -d
+```
+
+The application is configured to run at `tootcast.kyd.au` with Traefik handling TLS via Let's Encrypt.
+
 ## Building
 
 To create a production version of your app:

@@ -1,0 +1,21 @@
+services:
+  tootcast:
+    build: .
+    container_name: tootcast.kyd.au
+    restart: unless-stopped
+    networks:
+      - traefik_default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tootcast.rule=Host(`tootcast.kyd.au`)"
+      - "traefik.http.routers.tootcast.entrypoints=websecure"
+      - "traefik.http.routers.tootcast.tls.certresolver=le"
+      - "traefik.http.services.tootcast.loadbalancer.server.port=80"
+      - "traefik.docker.network=traefik_default"
+      # Enable compression middleware (assuming the middleware is defined in Traefik)
+      - "traefik.http.routers.tootcast.middlewares=compress"
+      # Alternatively, let Nginx (inside the container) handle it for simplicity.
+
+networks:
+  traefik_default:
+    external: true
