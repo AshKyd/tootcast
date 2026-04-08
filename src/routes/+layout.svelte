@@ -5,7 +5,7 @@
 	let { children } = $props();
 
 	// Update system-level attributes when theme changes
-	let currentTheme = $state('dark');
+	let currentTheme = $state<'dark' | 'light'>('dark');
 	
 	$effect(() => {
 		const mql = window.matchMedia('(prefers-color-scheme: dark)');
@@ -26,7 +26,7 @@
 	<meta name="description" content="Dead simple voice notes for Mastodon." />
 </svelte:head>
 
-<UIRoot>
+<UIRoot mode={currentTheme}>
 	<main class="app-container">
 		{@render children()}
 	</main>
@@ -38,8 +38,6 @@
 		padding: 0;
 		height: 100dvh;
 		width: 100%;
-		background-color: var(--color-bg);
-		color: var(--color-text);
 		font-family: var(--akui-font-family);
 		overflow: hidden;
 		overscroll-behavior: none;
