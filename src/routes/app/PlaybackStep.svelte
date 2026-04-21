@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Button, LoaderOverlay, InputGroup, Panel, Select } from 'svelte-akui';
+	import { Button, LoaderOverlay, MenuButton, MenuItem, Tooltip, createTooltip, Padding } from 'svelte-akui';
+	import { onMount } from 'svelte';
 	import { postVoiceNote, type StatusVisibility } from '$lib/mastodon';
 	import { settings } from '$lib/settings.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
@@ -20,12 +21,29 @@
 		}
 	});
 
-	const visibilityOptions: { value: StatusVisibility; label: string }[] = [
-		{ value: 'public', label: 'Public' },
-		{ value: 'unlisted', label: 'Unlisted' },
-		{ value: 'private', label: 'Followers only' },
-		{ value: 'direct', label: 'Direct Message' }
+	const visibilityOptions = [
+		{ value: 'public' as StatusVisibility, label: 'Public', icon: 'globe' },
+		{ value: 'unlisted' as StatusVisibility, label: 'Unlisted', icon: 'moon' },
+		{ value: 'private' as StatusVisibility, label: 'Followers only', icon: 'lock' },
+		{ value: 'direct' as StatusVisibility, label: 'Direct Message', icon: 'at' }
 	];
+
+	const currentVisibilityIcon = $derived.by(() => {
+		return visibilityOptions.find((v) => v.value === visibility)?.icon || 'globe';
+	});
+
+	const currentVisibilityLabel = $derived.by(() => {
+		return visibilityOptions.find((v) => v.value === visibility)?.label || 'Public';
+	});
+
+	const deleteT = createTooltip({ position: 'top' });
+	const privacyT = createTooltip({ position: 'top' });
+
+	let isMouse = $state(false);
+
+	onMount(() => {
+		isMouse = window.matchMedia('(hover: hover)').matches;
+	});
 
 	async function handleSend() {
 		if (!recorder.audioBlob) return;
@@ -68,59 +86,82 @@
 		<AudioPlayer src={recorder.audioUrl} />
 	</div>
 
-	<Panel>
-		<div class="visibility-control mb-8">
-			<label for="visibility-select" class="sr-only">Post Visibility</label>
-			<Select
-				id="visibility-select"
-				bind:value={visibility}
-				options={visibilityOptions}
-				placeholder="Post Visibility"
-				disabled={isUploading}
-			/>
-		</div>
+	<div class="actions-row">
+		<Tooltip
+			visible={deleteT.visible && isMouse}
+			x={deleteT.x}
+			y={deleteT.y}
+			position={deleteT.position}
+		>
+			<Padding size="s">Delete and start over</Padding>
+		</Tooltip>
+		<Button
+			variant="regular"
+			icon="trash"
+			iconPosition="only"
+			label="Discard"
+			onclick={handleDiscard}
+			disabled={isUploading}
+			size="large"
+			{...(isMouse ? deleteT.handlers : {})}
+		/>
 
-		<div class="actions">
-			<InputGroup style="width: 100%;">
-				<Button
-					variant="regular"
-					icon="arrow-counterclockwise"
-					iconPosition="only"
-					label="Record again"
-					onclick={handleDiscard}
-					disabled={isUploading}
-					size="large"
-					style="flex: initial;"
-				/>
-				{#if auth.session}
-					<Button
-						variant="accent"
-						icon="send"
-						iconPosition="right"
-						label="Post it!"
-						onclick={handleSend}
-						disabled={isUploading}
-						size="large"
-						style="min-width:12em;"
+		<div class="spacer"></div>
+
+		<Tooltip
+			visible={privacyT.visible && isMouse}
+			x={privacyT.x}
+			y={privacyT.y}
+			position={privacyT.position}
+		>
+			<Padding size="s">Post privacy: {currentVisibilityLabel}</Padding>
+		</Tooltip>
+		<MenuButton
+			icon={currentVisibilityIcon}
+			variant="regular"
+			size="large"
+			disabled={isUploading}
+			origin="bottom-right"
+			{...(isMouse ? privacyT.handlers : {})}
+		>
+			{#snippet menu()}
+				{#each visibilityOptions as option}
+					<MenuItem
+						label={option.label}
+						icon={option.icon}
+						onclick={() => (visibility = option.value)}
 					/>
-				{:else}
-					<Button
-						variant="accent"
-						icon="box-arrow-in-right"
-						iconPosition="right"
-						label="Login to Post"
-						onclick={async () => {
-							await recorder.saveToStore();
-							goto(resolve('/login'));
-						}}
-						disabled={isUploading}
-						size="large"
-						style="min-width:12em;"
-					/>
-				{/if}
-			</InputGroup>
-		</div>
-	</Panel>
+				{/each}
+			{/snippet}
+		</MenuButton>
+
+		{#if auth.session}
+			<Button
+				variant="accent"
+				icon="send"
+				iconPosition="right"
+				label="Post it!"
+				onclick={handleSend}
+				disabled={isUploading}
+				size="large"
+				style="min-width: 10em;"
+			/>
+		{:else}
+			<Button
+				variant="accent"
+				icon="box-arrow-in-right"
+				iconPosition="right"
+				label="Login to Post"
+				onclick={async () => {
+					await recorder.saveToStore();
+					goto(resolve('/login'));
+				}}
+				disabled={isUploading}
+				size="large"
+				style="min-width: 10em;"
+			/>
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -142,11 +183,15 @@
 		margin-bottom: 2.5rem;
 	}
 
-	.actions {
+	.actions-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 		width: 100%;
+		max-width: 600px;
 	}
 
-	.mb-8 {
-		margin-bottom: 0.5rem;
+	.spacer {
+		flex: 1;
 	}
 </style>

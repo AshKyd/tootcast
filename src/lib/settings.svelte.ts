@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS: UserSettings = {
 	deviceId: '',
 	noiseCancellation: false,
 	addHashtag: true,
-	defaultVisibility: 'unlisted'
+	defaultVisibility: 'private'
 };
 
 class Settings {
