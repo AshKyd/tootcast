@@ -44,6 +44,7 @@
 		"bootstrap-icons": "^1.11.3",
 		"masto": "^7.10.2",
 		"svelte-akui": "github:ashkyd/svelte-akui",
-		"svelte-bootstrap-icons": "^3.3.0"
+		"svelte-bootstrap-icons": "^3.3.0",
+		"vmsg": "^0.4.0"
 	}
 }

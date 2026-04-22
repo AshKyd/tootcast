@@ -64,12 +64,12 @@
 				<MenuItem label="Settings" icon="gear" onclick={() => (isSettingsOpen = true)} />
 				{#if recorder.audioUrl}
 					<MenuItem
-						label="Download WAV"
+						label="Download"
 						icon="download"
 						onclick={() => {
 							const a = document.createElement('a');
 							a.href = recorder.audioUrl!;
-							a.download = `voicenote_${Date.now()}.wav`;
+							a.download = `voicenote_${Date.now()}.mp3`;
 							a.click();
 						}}
 					/>

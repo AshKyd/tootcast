@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import { settings } from './settings.svelte';
 import { db } from './db';
 import { transcriber } from './transcriber.svelte';
-import { encodeWAV } from './wav';
+import { Recorder as VmsgRecorder } from 'vmsg';
 
 export type RecorderStatus = 'idle' | 'initializing' | 'ready' | 'recording' | 'stopping' | 'error';
 
@@ -44,10 +44,9 @@ class Recorder {
 	remainingSeconds = $derived(Math.max(0, Math.ceil((this.MAX_DURATION - this.recordingDuration) / 1000)));
 	isNearLimit = $derived(this.isRecording && this.remainingSeconds <= 10);
 
-	// --- Raw PCM Collection ---
-	private leftChannel: Float32Array[] = [];
-	private rightChannel: Float32Array[] = [];
-	private recordedLength = 0;
+	// --- MP3 Encoding (vmsg) ---
+	private vmsg: VmsgRecorder | null = null;
+	private wasmURL = new URL('../../node_modules/vmsg/vmsg.wasm', import.meta.url).href;
 	private processor: ScriptProcessorNode | null = null;
 
 	/**
@@ -134,6 +133,12 @@ class Recorder {
 			this.analyser.fftSize = 256;
 			source.connect(this.analyser);
 
+			// --- AudioEncoder Diagnostic ---
+			// --- MP3 Encoding (vmsg) ---
+			this.vmsg = new VmsgRecorder({ wasmURL: this.wasmURL });
+			await this.vmsg.initWorker();
+			console.log('🎙️ vmsg: MP3 Encoder (WASM) Initialized');
+
 			if (this.audioContext.state === 'suspended') {
 				await this.audioContext.resume();
 			}
@@ -181,37 +186,49 @@ class Recorder {
 				return;
 			}
 
-			if (!this.stream || !this.audioContext) throw new Error('No audio stream available.');
+			if (!this.stream || !this.audioContext || !this.vmsg?.worker) throw new Error('No audio stream available.');
 
-			// Reset buffers
-			this.leftChannel = [];
-			this.rightChannel = [];
-			this.recordedLength = 0;
+			// Initialize vmsg encoder
+			this.vmsg.worker.postMessage({ type: 'start', data: this.audioContext.sampleRate });
 
-			// Create ScriptProcessor for raw PCM capture
-			// 2048 buffer size for more frequent updates
-			this.processor = this.audioContext.createScriptProcessor(2048, 2, 2);
+			// --- AudioWorklet Refactor (Modern API) ---
+			const workletCode = `
+				class RecorderProcessor extends AudioWorkletProcessor {
+					process(inputs) {
+						const input = inputs[0];
+						if (input.length > 0) {
+							const samples = input[0];
+							// We must send a copy because the buffer is reused
+							this.port.postMessage(new Float32Array(samples));
+						}
+						return true;
+					}
+				}
+				registerProcessor('recorder-processor', RecorderProcessor);
+			`;
+
+			const blob = new Blob([workletCode], { type: 'application/javascript' });
+			const workletURL = URL.createObjectURL(blob);
 			
-			this.processor.onaudioprocess = (e) => {
-				// IMPORTANT: Allow collection during 'stopping' state to capture the tail!
+			await this.audioContext.audioWorklet.addModule(workletURL);
+			const workletNode = new AudioWorkletNode(this.audioContext, 'recorder-processor');
+			
+			workletNode.port.onmessage = (e) => {
 				if (this.status !== 'recording' && this.status !== 'stopping') return;
-				
-				const left = e.inputBuffer.getChannelData(0);
-				const right = e.inputBuffer.getChannelData(1);
-				
-				// We must clone the typed arrays because the underlying buffer is reused by the browser
-				this.leftChannel.push(new Float32Array(left));
-				this.rightChannel.push(new Float32Array(right));
-				this.recordedLength += left.length;
+				// Send samples directly to vmsg worker
+				this.vmsg?.worker?.postMessage({ type: 'data', data: e.data });
 			};
 
 			// Connect the chain
 			const source = this.audioContext.createMediaStreamSource(this.stream);
-			source.connect(this.processor);
-			this.processor.connect(this.audioContext.destination);
+			source.connect(workletNode);
+			workletNode.connect(this.audioContext.destination);
+
+			// Keep a reference to disconnect later
+			this.processor = workletNode as any;
 
 			this.status = 'recording';
-			console.log('🎤 Recording Lossless PCM...');
+			console.log('🎤 Recording MP3 (WASM)...');
 			transcriber.start();
 
 			// Start duration timer
@@ -244,7 +261,7 @@ class Recorder {
 			this.timerId = null;
 		}
 
-		if (this.status === 'recording' && this.processor && this.audioContext) {
+		if (this.status === 'recording' && this.processor && this.audioContext && this.vmsg?.worker) {
 			this.status = 'stopping';
 			
 			// ⏳ Wait a moment to ensure the final buffer chunks are processed.
@@ -252,37 +269,36 @@ class Recorder {
 
 			// Disconnect processor
 			this.processor.disconnect();
-			this.processor.onaudioprocess = null;
+			if (this.processor instanceof AudioWorkletNode) {
+				this.processor.port.onmessage = null;
+			}
 
 			try {
-				console.log('🔄 Encoding lossless WAV...');
+				console.log('🔄 Encoding MP3 (WASM)...');
 				
-				// Flatten buffers into a single AudioBuffer
-				const audioBuffer = this.audioContext.createBuffer(
-					2, 
-					this.recordedLength, 
-					this.audioContext.sampleRate
-				);
+				// Signal vmsg to stop and get the blob
+				this.vmsg.worker.postMessage({ type: 'stop' });
 
-				const leftData = audioBuffer.getChannelData(0);
-				const rightData = audioBuffer.getChannelData(1);
+				this.audioBlob = await new Promise<Blob>((resolve, reject) => {
+					if (!this.vmsg?.worker) return reject('Worker lost');
+					
+					// Listen for the stop message from vmsg
+					const handleMessage = (e: MessageEvent) => {
+						const msg = e.data;
+						if (msg.type === 'stop') {
+							this.vmsg?.worker?.removeEventListener('message', handleMessage);
+							resolve(msg.data);
+						} else if (msg.type === 'error' || msg.type === 'internal-error') {
+							this.vmsg?.worker?.removeEventListener('message', handleMessage);
+							reject(msg.data);
+						}
+					};
+					this.vmsg.worker.addEventListener('message', handleMessage);
+				});
 
-				let offset = 0;
-				for (const chunk of this.leftChannel) {
-					leftData.set(chunk, offset);
-					offset += chunk.length;
-				}
-
-				offset = 0;
-				for (const chunk of this.rightChannel) {
-					rightData.set(chunk, offset);
-					offset += chunk.length;
-				}
-
-				this.audioBlob = encodeWAV(audioBuffer);
-				console.log('✅ WAV Ready (Lossless):', this.audioBlob.size, 'bytes');
+				console.log('✅ MP3 Ready (WASM):', this.audioBlob.size, 'bytes');
 			} catch (err) {
-				console.error('❌ WAV Encoding failed:', err);
+				console.error('❌ MP3 Encoding failed:', err);
 				this.error = 'Failed to process audio data.';
 			}
 
