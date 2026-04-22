@@ -172,6 +172,12 @@ class Recorder {
 	 */
 	async start() {
 		try {
+			// Clean out any existing transcription and audio state when we start a new recording
+			transcriber.reset();
+			this.audioBlob = null;
+			this.audioUrl = null;
+			await this.clearStore();
+
 			this.error = null;
 			this.isRequestingStart = true;
 
