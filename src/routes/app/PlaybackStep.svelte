@@ -1,7 +1,7 @@
 <script lang="ts">
 	import {
 		Button,
-		LoaderOverlay,
+		Loader, // Added Loader
 		MenuButton,
 		MenuItem,
 		Tooltip,
@@ -18,9 +18,8 @@
 	import { fade } from 'svelte/transition';
 	import { transcriber } from '$lib/transcriber.svelte';
 
-	let { recorder, onsuccess, ondiscard, onerror } = $props();
+	let { recorder, ondiscard, onerror, onsend } = $props();
 
-	let isUploading = $state(false);
 	let visibility = $state<StatusVisibility>(settings.data.defaultVisibility);
 
 	$effect(() => {
@@ -57,34 +56,12 @@
 	async function handleSend() {
 		if (!recorder.audioBlob) return;
 
-		console.group('🎤 Diagnostic: Send Voice Note');
-		console.log('Blob Type:', recorder.audioBlob.type);
-		console.log('Blob Size:', (recorder.audioBlob.size / 1024).toFixed(2), 'KB');
-		isUploading = true;
-		onerror(null);
-
-		try {
-			const statusText = settings.data.addHashtag ? '#VoiceNote' : '';
-			const altText = transcriber.transcript?.trim() || 'Voice note recorded with TootCast';
-			
-			const status = await postVoiceNote({
-				blob: recorder.audioBlob,
-				text: statusText,
-				description: altText,
-				visibility
-			});
-			await recorder.clearStore();
-			recorder.discard();
-			onsuccess(status.url);
-			console.log('✅ Send successful');
-		} catch (err: unknown) {
-			const errObject = err as Error;
-			console.error('❌ Send failed:', errObject);
-			onerror(`Upload failed: ${errObject.message || 'Generic error'}`);
-		} finally {
-			isUploading = false;
-			console.groupEnd();
-		}
+		const description = transcriber.transcript?.trim() || 'Voice note recorded with TootCast';
+		onsend({
+			blob: recorder.audioBlob,
+			visibility,
+			description
+		});
 	}
 
 	function handleDiscard() {
@@ -92,10 +69,6 @@
 		ondiscard();
 	}
 </script>
-
-{#if isUploading}
-	<LoaderOverlay message="Uploading voice note..." />
-{/if}
 
 <div class="playback-step" transition:fade>
 	<div class="player-wrapper">
@@ -118,7 +91,6 @@
 			iconPosition="left"
 			label="Delete"
 			onclick={handleDiscard}
-			disabled={isUploading}
 			size="large"
 			{...isMouse ? deleteT.handlers : {}}
 		/>
@@ -137,7 +109,6 @@
 			icon={currentVisibilityIcon}
 			variant="regular"
 			size="large"
-			disabled={isUploading}
 			origin="bottom-right"
 			{...isMouse ? privacyT.handlers : {}}
 		>
@@ -159,7 +130,6 @@
 				iconPosition="left"
 				label="Post"
 				onclick={handleSend}
-				disabled={isUploading}
 				size="large"
 				class="post-button"
 			/>
@@ -172,7 +142,6 @@
 					await recorder.saveToStore();
 					goto(resolve('/login'));
 				}}
-				disabled={isUploading}
 				size="large"
 				class="post-button"
 			>

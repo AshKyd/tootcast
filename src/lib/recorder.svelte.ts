@@ -211,10 +211,10 @@ class Recorder {
 				return;
 			}
 
-			if (!this.stream || !this.audioContext || !this.vmsg?.worker) throw new Error('No audio stream available.');
+			if (!this.stream || !this.audioContext || !(this.vmsg as any)?.worker) throw new Error('No audio stream available.');
 
 			// Initialize vmsg encoder
-			this.vmsg.worker.postMessage({ type: 'start', data: this.audioContext.sampleRate });
+			(this.vmsg as any).worker.postMessage({ type: 'start', data: this.audioContext.sampleRate });
 
 			// --- AudioWorklet Refactor (Modern API) ---
 			const workletCode = `
@@ -241,7 +241,7 @@ class Recorder {
 			workletNode.port.onmessage = (e) => {
 				if (this.status !== 'recording' && this.status !== 'stopping') return;
 				// Send samples directly to vmsg worker
-				this.vmsg?.worker?.postMessage({ type: 'data', data: e.data });
+				(this.vmsg as any)?.worker?.postMessage({ type: 'data', data: e.data });
 			};
 
 			// Connect the chain
@@ -286,7 +286,7 @@ class Recorder {
 			this.timerId = null;
 		}
 
-		if (this.status === 'recording' && this.processor && this.audioContext && this.vmsg?.worker) {
+		if (this.status === 'recording' && this.processor && this.audioContext && (this.vmsg as any)?.worker) {
 			this.status = 'stopping';
 			
 			// ⏳ Wait a moment to ensure the final buffer chunks are processed.
@@ -302,23 +302,23 @@ class Recorder {
 				console.log('🔄 Encoding MP3 (WASM)...');
 				
 				// Signal vmsg to stop and get the blob
-				this.vmsg.worker.postMessage({ type: 'stop' });
+				(this.vmsg as any).worker.postMessage({ type: 'stop' });
 
 				this.audioBlob = await new Promise<Blob>((resolve, reject) => {
-					if (!this.vmsg?.worker) return reject('Worker lost');
+					if (!(this.vmsg as any)?.worker) return reject('Worker lost');
 					
 					// Listen for the stop message from vmsg
 					const handleMessage = (e: MessageEvent) => {
 						const msg = e.data;
 						if (msg.type === 'stop') {
-							this.vmsg?.worker?.removeEventListener('message', handleMessage);
+							(this.vmsg as any)?.worker?.removeEventListener('message', handleMessage);
 							resolve(msg.data);
 						} else if (msg.type === 'error' || msg.type === 'internal-error') {
-							this.vmsg?.worker?.removeEventListener('message', handleMessage);
+							(this.vmsg as any)?.worker?.removeEventListener('message', handleMessage);
 							reject(msg.data);
 						}
 					};
-					this.vmsg.worker.addEventListener('message', handleMessage);
+					(this.vmsg as any).worker.addEventListener('message', handleMessage);
 				});
 
 				console.log('✅ MP3 Ready (WASM):', this.audioBlob.size, 'bytes');

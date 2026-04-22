@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth.svelte';
-	import { logout } from '$lib/mastodon';
+	import { logout, postVoiceNote, type StatusVisibility } from '$lib/mastodon';
 	import { fade, fly } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -13,9 +13,11 @@
 		MenuItem,
 		Panel,
 		Padding,
-		InputGroup
+		InputGroup,
+		Loader
 	} from 'svelte-akui';
 	import { recorder } from '$lib/recorder.svelte';
+	import { settings } from '$lib/settings.svelte'; // Added settings
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import RecordStep from './RecordStep.svelte';
 	import PlaybackStep from './PlaybackStep.svelte';
@@ -23,6 +25,8 @@
 	// App UI State
 	let isSettingsOpen = $state(false);
 	let error = $state<string | null>(null);
+	let isUploading = $state(false);
+	let uploadStatus = $state<'uploading' | 'tooting'>('uploading');
 	let success = $state(false);
 	let lastPostUrl = $state<string | null | undefined>(null);
 
@@ -48,6 +52,31 @@
 			} else if (isSettingsOpen) {
 				isSettingsOpen = false;
 			}
+		}
+	}
+	async function handleSend(data: { blob: Blob; visibility: StatusVisibility; description: string }) {
+		isUploading = true;
+		uploadStatus = 'uploading';
+		error = null;
+
+		try {
+			const statusText = settings.data.addHashtag ? '#VoiceNote' : '';
+			const status = await postVoiceNote({
+				...data,
+				text: statusText,
+				onStatus: (s) => (uploadStatus = s)
+			});
+			await recorder.clearStore();
+			recorder.discard();
+			success = true;
+			lastPostUrl = status.url;
+			console.log('✅ Send successful');
+		} catch (err: unknown) {
+			const errObject = err as Error;
+			console.error('❌ Send failed:', errObject);
+			error = `Upload failed: ${errObject.message || 'Generic error'}`;
+		} finally {
+			isUploading = false;
 		}
 	}
 </script>
@@ -97,36 +126,55 @@
 	{/if}
 
 	<div class="main-content">
-		{#if success}
+		{#if success || isUploading}
 			<div class="success-screen" in:fly={{ y: 20 }}>
 				<Panel>
 					<Padding size="l">
-						<div class="text-center">
-							<h2 class="text-5xl font-extrabold mb-4 tracking-tight">Sent!</h2>
-							<p class="text-xl opacity-60 mb-10">Your voice note is now on fedi.</p>
+						<div class="text-center success-panel-content">
+							{#if isUploading}
+								<div class="loading-state" in:fade>
+									<Loader size="3rem" />
+									<div class="status-container m-t-m">
+										{#key uploadStatus}
+											<p
+												class="upload-status"
+												in:fly={{ x: 20, opacity: 0, duration: 400, delay: 200 }}
+												out:fly={{ x: -20, opacity: 0, duration: 400 }}
+											>
+												{uploadStatus}…
+											</p>
+										{/key}
+									</div>
+								</div>
+							{:else}
+								<div class="sent-state" in:fade>
+									<h2 class="text-5xl font-extrabold mb-4 tracking-tight">Sent!</h2>
+									<p class="text-xl opacity-60 mb-10">Your voice note is now on fedi.</p>
 
-							<InputGroup style="width: 100%;min-width:300px;margin-top:1rem;">
-								<Button
-									variant="regular"
-									label="View Post"
-									href={lastPostUrl || undefined}
-									target="_blank"
-									size="large"
-									disabled={!lastPostUrl}
-									style="flex: 1;"
-								/>
-								<Button
-									variant="accent"
-									label="Close"
-									size="large"
-									onclick={() => {
-										recorder.discard();
-										success = false;
-										lastPostUrl = null;
-									}}
-									style="flex: 1;"
-								/>
-							</InputGroup>
+									<InputGroup style="width: 100%;min-width:300px;margin-top:1rem;">
+										<Button
+											variant="regular"
+											label="View Post"
+											href={lastPostUrl || undefined}
+											target="_blank"
+											size="large"
+											disabled={!lastPostUrl}
+											style="flex: 1;"
+										/>
+										<Button
+											variant="accent"
+											label="Close"
+											size="large"
+											onclick={() => {
+												recorder.discard();
+												success = false;
+												lastPostUrl = null;
+											}}
+											style="flex: 1;"
+										/>
+									</InputGroup>
+								</div>
+							{/if}
 						</div>
 					</Padding>
 				</Panel>
@@ -134,10 +182,7 @@
 		{:else if recorder.audioUrl}
 			<PlaybackStep
 				{recorder}
-				onsuccess={(url: string | null | undefined) => {
-					success = true;
-					lastPostUrl = url;
-				}}
+				onsend={handleSend}
 				ondiscard={() => (success = false)}
 				onerror={(msg: string | null) => (error = msg)}
 			/>
@@ -175,5 +220,46 @@
 
 	.main-content > :global(*) {
 		pointer-events: auto;
+	}
+
+	.success-panel-content {
+		min-height: 280px;
+		width: 400px;
+		max-width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.loading-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+	}
+
+	.status-container {
+		position: relative;
+		height: 2rem;
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.upload-status {
+		position: absolute;
+		font-size: 1.25rem;
+		font-weight: 600;
+		text-transform: capitalize;
+		opacity: 0.8;
+		letter-spacing: 0.05em;
+		white-space: nowrap;
+	}
+
+	.m-t-m {
+		margin-top: var(--spacing-m);
 	}
 </style>

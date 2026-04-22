@@ -118,23 +118,27 @@ export async function postVoiceNote({
 	blob,
 	text,
 	description,
-	visibility = 'public'
+	visibility = 'public',
+	onStatus
 }: {
 	blob: Blob;
 	text?: string;
 	description?: string;
 	visibility?: StatusVisibility;
+	onStatus?: (status: 'uploading' | 'tooting') => void;
 }): Promise<Status> {
 	const client = await getMastoClient();
 	if (!client) throw new Error('Not authenticated with Mastodon.');
 
-	const filename = `voicenote_${Date.now()}.wav`;
-	const file = new File([blob], filename, { type: 'audio/wav' });
+	const extension = blob.type.split('/')[1] || 'mp3';
+	const filename = `voicenote_${Date.now()}.${extension}`;
+	const file = new File([blob], filename, { type: blob.type });
 
 	console.log('📡 Mastodon: Preparing upload...');
+	onStatus?.('uploading');
 	console.table({
 		filename,
-		mimeType: 'audio/wav',
+		mimeType: blob.type,
 		reportedSize: `${(blob.size / 1024).toFixed(2)} KB`
 	});
 
@@ -149,6 +153,7 @@ export async function postVoiceNote({
 
 		// 2. Post Status with Media
 		console.log('📡 Mastodon: Posting status...');
+		onStatus?.('tooting');
 
 		const statusText = text ?? '#VoiceNote';
 
