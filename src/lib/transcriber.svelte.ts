@@ -14,9 +14,6 @@ class Transcriber {
 
 	private recognition: any = null;
 	private isSupported = false;
-	private restartCount = 0;
-	private lastRestartTime = 0;
-
 	private lastStartTime = 0;
 
 	constructor() {
@@ -32,7 +29,6 @@ class Transcriber {
 
 				this.recognition.onstart = () => {
 					console.log('🎙️ Speech recognition started');
-					this.lastStartTime = Date.now();
 					this.status = 'listening';
 					this.error = null;
 				};
@@ -74,42 +70,17 @@ class Transcriber {
 				};
 
 				this.recognition.onend = () => {
-					console.log('🏁 Speech recognition ended');
-					
-					// If it ended almost immediately, it's a microphone conflict (common on mobile Chrome)
 					const duration = Date.now() - this.lastStartTime;
-					if (duration < 1000 && this.status === 'listening') {
-						console.warn('🛑 Speech recognition ended immediately (mic conflict). Stopping to prevent beeps.');
-						this.status = 'error';
-						this.error = 'Live transcription unavailable on this device while recording.';
-						return;
-					}
+					console.log(`🏁 Speech recognition ended (ran for ${duration}ms)`);
 					
-					// Only attempt restart if we are still supposed to be listening
-					if (this.status === 'listening' || (this.status === 'idle' && this.transcript)) {
-						const now = Date.now();
-						// Prevent rapid restart loops (beeping)
-						if (now - this.lastRestartTime < 2000) {
-							this.restartCount++;
-						} else {
-							this.restartCount = 0;
-						}
-						
-						this.lastRestartTime = now;
-
-						if (this.restartCount > 3) {
-							console.warn('🛑 Too many rapid restarts. Stopping transcription to prevent beeping.');
-							this.status = 'error';
-							this.error = 'Transcription stopped: connectivity issues or microphone conflict.';
-							return;
-						}
-
-						console.log('🔄 Restarting speech recognition...');
-						try {
-							this.recognition?.start();
-						} catch (e) {
-							console.error('Failed to restart:', e);
-						}
+					// If the engine stops while we still expect it to be listening,
+					// it crashed or timed out (very common on mobile Chrome).
+					// Instead of trying to restart and causing an infinite beep loop,
+					// we just accept defeat gracefully.
+					if (this.status === 'listening') {
+						console.warn(`🛑 Speech recognition ended unexpectedly after ${duration}ms. Not restarting.`);
+						this.status = 'error';
+						this.error = 'Live transcription unavailable or interrupted.';
 					}
 				};
 			} else {

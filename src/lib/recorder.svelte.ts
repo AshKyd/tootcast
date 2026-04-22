@@ -125,6 +125,7 @@ class Recorder {
 
 		try {
 			console.log('🎙️ Initializing MediaRecorder...');
+			console.log('📱 User Agent:', navigator.userAgent);
 
 			// 1. Request stream with user preferences
 			const constraints: MediaStreamConstraints = {
@@ -135,8 +136,14 @@ class Recorder {
 					autoGainControl: true
 				}
 			};
+			console.log('🔧 Constraints:', JSON.stringify(constraints));
 
 			this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+			
+			const track = this.stream.getAudioTracks()[0];
+			if (track) {
+				console.log('🎛️ Acquired Track:', track.label, JSON.stringify(track.getSettings()));
+			}
 
 			// Refresh device list now that we have permission (labels will be visible)
 			await settings.refreshDevices();
@@ -163,6 +170,7 @@ class Recorder {
 			if (this.audioContext.state === 'suspended') {
 				await this.audioContext.resume();
 			}
+			console.log(`🔊 AudioContext ready (State: ${this.audioContext.state}, Rate: ${this.audioContext.sampleRate}Hz)`);
 
 			this.status = 'ready';
 			console.log('✅ Recorder Ready.');

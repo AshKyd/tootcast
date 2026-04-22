@@ -19,11 +19,13 @@
 	import { recorder } from '$lib/recorder.svelte';
 	import { settings } from '$lib/settings.svelte'; // Added settings
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
+	import DebugConsole from '$lib/components/DebugConsole.svelte';
 	import RecordStep from './RecordStep.svelte';
 	import PlaybackStep from './PlaybackStep.svelte';
 
 	// App UI State
 	let isSettingsOpen = $state(false);
+	let isDebugOpen = $state(false);
 	let error = $state<string | null>(null);
 	let isUploading = $state(false);
 	let uploadStatus = $state<'uploading' | 'tooting'>('uploading');
@@ -92,6 +94,7 @@
 		<MenuButton icon="list" variant="regular" size="small" origin="bottom-right">
 			{#snippet menu()}
 				<MenuItem label="Settings" icon="gear" onclick={() => (isSettingsOpen = true)} />
+				<MenuItem label="Toggle Debug Console" icon="terminal" onclick={() => (isDebugOpen = !isDebugOpen)} />
 				{#if recorder.audioUrl}
 					<MenuItem
 						label="Download"
@@ -123,6 +126,10 @@
 
 	{#if isSettingsOpen}
 		<SettingsModal onClose={() => (isSettingsOpen = false)} />
+	{/if}
+
+	{#if isDebugOpen}
+		<DebugConsole onClose={() => (isDebugOpen = false)} />
 	{/if}
 
 	<div class="main-content">
