@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { UIRoot } from 'svelte-akui';
 	import '$lib/style.css';
+	import { recorder } from '$lib/recorder.svelte';
 
 	let { children } = $props();
 
@@ -18,6 +19,23 @@
 		updateTheme();
 		mql.addEventListener('change', updateTheme);
 		return () => mql.removeEventListener('change', updateTheme);
+	});
+
+	$effect(() => {
+		if (recorder.isRecording) {
+			document.body.classList.add('recording');
+		} else {
+			document.body.classList.remove('recording');
+		}
+	});
+
+	$effect(() => {
+		const isPreview = (!!recorder.audioUrl || recorder.status === 'stopping') && !recorder.isRecording;
+		if (isPreview) {
+			document.body.classList.add('preview');
+		} else {
+			document.body.classList.remove('preview');
+		}
 	});
 </script>
 

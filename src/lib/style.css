@@ -14,18 +14,90 @@
 	--transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
 	--akui-font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+
+	/* Default Dark Theme Colors (using oklch for better gradients) */
+	--color-bg: oklch(10% 0.02 240);
+	--color-text: oklch(98% 0.01 240);
+	--color-accent: oklch(65% 0.25 280);
+	--color-accent-glow: oklch(60% 0.2 280 / 18%);
+	--color-secondary-glow: oklch(65% 0.2 330 / 15%);
+	--color-surface: oklch(100% 0 0 / 3%);
+	--color-surface-border: oklch(100% 0 0 / 10%);
+	--color-bg-bottom: oklch(15% 0.05 280);
+
+	/* Recording Gradient (More intense) */
+	--color-bg-recording: oklch(15% 0.1 280);
+	--color-bg-bottom-recording: oklch(10% 0.3 280);
+
+	/* Preview Gradient (Purple/Pink) */
+	--color-bg-preview: oklch(15% 0.1 300);
+	--color-bg-bottom-preview: oklch(7.82% 0.03779 318.705);
+}
+
+[data-theme='light'] {
+	/* Shifted from blue (240) to purple (270-280) */
+	--color-bg: oklch(98% 0.01 280);
+	--color-text: oklch(20% 0.05 280);
+	--color-accent: oklch(60% 0.2 280);
+	--color-accent-glow: oklch(70% 0.15 280 / 12%);
+	--color-secondary-glow: oklch(75% 0.15 310 / 10%);
+	--color-surface: oklch(100% 0 0 / 70%);
+	--color-surface-border: oklch(0% 0 0 / 5%);
+	--color-bg-bottom: oklch(94% 0.03 280);
+
+	/* Recording Gradient (Light Mode) */
+	--color-bg-recording: oklch(96% 0.05 280);
+	--color-bg-bottom-recording: oklch(85% 0.15 280);
+
+	/* Preview Gradient (Light Mode) */
+	--color-bg-preview: oklch(95.313% 0.03381 316.76);
+	--color-bg-bottom-preview: oklch(100% 0.00011 271.152);
 }
 
 body {
-	background-color: var(--color-bg);
+	background: linear-gradient(to bottom, var(--color-bg) 0%, var(--color-bg-bottom) 100%);
+	background-attachment: fixed;
 	color: var(--color-text);
 	font-family: var(--akui-font-family);
 	margin: 0;
 	min-height: 100vh;
 	-webkit-font-smoothing: antialiased;
-	background-image:
-		radial-gradient(circle at 0% 0%, var(--color-accent-glow) 0%, transparent 40%),
-		radial-gradient(circle at 100% 100%, var(--color-secondary-glow) 0%, transparent 40%);
+	position: relative;
+}
+
+body::before,
+body::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	opacity: 0;
+	transition: opacity var(--transition-smooth);
+	z-index: -1;
+	pointer-events: none;
+}
+
+body::before {
+	background: linear-gradient(
+		to bottom,
+		var(--color-bg-recording) 0%,
+		var(--color-bg-bottom-recording) 100%
+	);
+}
+
+body::after {
+	background: linear-gradient(
+		to bottom,
+		var(--color-bg-preview) 0%,
+		var(--color-bg-bottom-preview) 100%
+	);
+}
+
+body.recording::before {
+	opacity: 1;
+}
+
+body.preview::after {
+	opacity: 1;
 }
 
 h1,

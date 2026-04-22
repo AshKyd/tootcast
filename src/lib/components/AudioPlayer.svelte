@@ -89,6 +89,10 @@
 		box-shadow:
 			0 10px 30px rgba(0, 0, 0, 0.2),
 			inset 0 0 0 1px var(--akui-border-secondary);
+		background: #ffffff08;
+	}
+	:global([data-theme='light']) .audio-player {
+		background: white;
 	}
 
 	.player-bar {
