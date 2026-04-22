@@ -2,6 +2,7 @@
 	import { UIRoot } from 'svelte-akui';
 	import '$lib/style.css';
 	import { recorder } from '$lib/recorder.svelte';
+	import DebugConsole from '$lib/components/DebugConsole.svelte';
 
 	let { children } = $props();
 
@@ -42,6 +43,7 @@
 </svelte:head>
 
 <UIRoot mode={currentTheme}>
+	<DebugConsole />
 	<main class="app-container">
 		{@render children()}
 	</main>

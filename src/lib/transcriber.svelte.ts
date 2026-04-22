@@ -14,6 +14,8 @@ class Transcriber {
 
 	private recognition: any = null;
 	private isSupported = false;
+	private restartCount = 0;
+	private lastRestartTime = 0;
 
 	constructor() {
 		if (browser) {
@@ -23,35 +25,79 @@ class Transcriber {
 				this.isSupported = true;
 				this.recognition = new SpeechRecognition();
 				this.recognition.continuous = true;
-				this.recognition.interimResults = false;
+				this.recognition.interimResults = true; // Show interim results for better feedback
 				this.recognition.lang = 'en-US';
 
+				this.recognition.onstart = () => {
+					console.log('🎙️ Speech recognition started');
+					this.status = 'listening';
+					this.error = null;
+				};
+
 				this.recognition.onresult = (event: any) => {
+					let interimTranscript = '';
 					let finalTranscript = '';
+
 					for (let i = event.resultIndex; i < event.results.length; ++i) {
 						if (event.results[i].isFinal) {
 							finalTranscript += event.results[i][0].transcript;
+						} else {
+							interimTranscript += event.results[i][0].transcript;
 						}
 					}
+
 					if (finalTranscript) {
 						this.transcript += (this.transcript ? ' ' : '') + finalTranscript.trim();
 					}
+					
+					// We could expose interimTranscript if we wanted real-time preview
+					console.log('📝 Result:', finalTranscript || `[${interimTranscript}]`);
 				};
 
 				this.recognition.onerror = (event: any) => {
-					console.error('Speech recognition error', event.error);
-					if (event.error === 'not-allowed') {
-						this.error = 'Speech recognition permission denied.';
-					} else {
-						this.error = `Speech recognition error: ${event.error}`;
-					}
+					console.error('⚠️ Speech recognition error:', event.error);
 					this.status = 'error';
+					
+					if (event.error === 'not-allowed') {
+						this.error = 'Microphone permission denied for speech recognition.';
+					} else if (event.error === 'audio-capture') {
+						this.error = 'Could not capture audio for transcription. Microphone may be in use by another process.';
+					} else if (event.error === 'no-speech') {
+						// This is common, we don't necessarily want to show an error UI for it
+						this.status = 'idle';
+					} else {
+						this.error = `Transcription error: ${event.error}`;
+					}
 				};
 
 				this.recognition.onend = () => {
-					if (this.status === 'listening') {
-						// Restart if it stopped unexpectedly while we're supposed to be listening
-						this.recognition?.start();
+					console.log('🏁 Speech recognition ended');
+					
+					// Only attempt restart if we are still supposed to be listening
+					if (this.status === 'listening' || (this.status === 'idle' && this.transcript)) {
+						const now = Date.now();
+						// Prevent rapid restart loops (beeping)
+						if (now - this.lastRestartTime < 2000) {
+							this.restartCount++;
+						} else {
+							this.restartCount = 0;
+						}
+						
+						this.lastRestartTime = now;
+
+						if (this.restartCount > 3) {
+							console.warn('🛑 Too many rapid restarts. Stopping transcription to prevent beeping.');
+							this.status = 'error';
+							this.error = 'Transcription stopped: connectivity issues or microphone conflict.';
+							return;
+						}
+
+						console.log('🔄 Restarting speech recognition...');
+						try {
+							this.recognition?.start();
+						} catch (e) {
+							console.error('Failed to restart:', e);
+						}
 					}
 				};
 			} else {
