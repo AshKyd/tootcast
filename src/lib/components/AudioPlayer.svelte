@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { Button, Glow } from 'svelte-akui';
 	import { fade, fly } from 'svelte/transition';
-	import { transcriber } from '$lib/transcriber.svelte';
+	import { transcriber as transcriberStore } from '$lib/transcriber.svelte';
+
+	const transcriber = transcriberStore;
 
 	let { src } = $props<{ src: string }>();
 
@@ -31,7 +33,11 @@
 	}
 </script>
 
-<div class="audio-player" class:expanded={isExpanded}>
+<div
+	class="audio-player"
+	class:expanded={isExpanded}
+	class:has-transcript={transcriber.status !== 'unsupported' || transcriber.transcript}
+>
 	<Glow />
 	<audio
 		bind:paused={isPaused}
@@ -122,7 +128,7 @@
 		border: 1px solid var(--akui-border-input);
 		border-radius: 33px; /* Perfect capsule for 66px height */
 		/* Horizontal padding is mirrored in PlaybackStep.svelte .actions-row for alignment */
-		padding: 0 1rem;
+		padding: 0 2rem 0 0.5rem;
 		display: flex;
 		flex-direction: column;
 		box-shadow:
@@ -133,6 +139,10 @@
 			height var(--transition-smooth),
 			background-color var(--transition-smooth),
 			padding var(--transition-smooth);
+	}
+
+	.audio-player.has-transcript {
+		padding-right: 1rem;
 	}
 
 	.audio-player.expanded {

@@ -12,7 +12,7 @@ class Transcriber {
 	transcript = $state<string>('');
 	error = $state<string | null>(null);
 
-	private recognition: SpeechRecognition | null = null;
+	private recognition: any = null;
 	private isSupported = false;
 
 	constructor() {
