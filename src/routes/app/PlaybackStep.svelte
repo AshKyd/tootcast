@@ -6,7 +6,8 @@
 		Tooltip,
 		// @ts-ignore - createTooltip is exported but missing from types
 		createTooltip,
-		Padding
+		Padding,
+		InfoBox
 	} from 'svelte-akui';
 	import { onMount } from 'svelte';
 	import { type StatusVisibility } from '$lib/mastodon';
@@ -18,7 +19,7 @@
 	import { fade } from 'svelte/transition';
 	import { transcriber } from '$lib/transcriber.svelte';
 
-	let { recorder, ondiscard, onsend } = $props();
+	let { recorder, ondiscard, onsend, error } = $props();
 
 	let visibility = $state<StatusVisibility>(settings.data.defaultVisibility);
 
@@ -71,6 +72,13 @@
 </script>
 
 <div class="playback-step" transition:fade>
+	{#if error}
+		<div class="error-container w-full max-w-sm m-b-m" transition:fade>
+			<InfoBox variant="error" title="Post failed">
+				{error}
+			</InfoBox>
+		</div>
+	{/if}
 	<div class="player-wrapper">
 		<AudioPlayer src={recorder.audioUrl} />
 	</div>

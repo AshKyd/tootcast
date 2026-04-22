@@ -184,7 +184,7 @@
 				{recorder}
 				onsend={handleSend}
 				ondiscard={() => (success = false)}
-				onerror={(msg: string | null) => (error = msg)}
+				error={error}
 			/>
 		{:else}
 			<RecordStep {recorder} {error} />
