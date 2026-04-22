@@ -17,6 +17,8 @@ class Transcriber {
 	private restartCount = 0;
 	private lastRestartTime = 0;
 
+	private lastStartTime = 0;
+
 	constructor() {
 		if (browser) {
 			const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -30,6 +32,7 @@ class Transcriber {
 
 				this.recognition.onstart = () => {
 					console.log('🎙️ Speech recognition started');
+					this.lastStartTime = Date.now();
 					this.status = 'listening';
 					this.error = null;
 				};
@@ -72,6 +75,15 @@ class Transcriber {
 
 				this.recognition.onend = () => {
 					console.log('🏁 Speech recognition ended');
+					
+					// If it ended almost immediately, it's a microphone conflict (common on mobile Chrome)
+					const duration = Date.now() - this.lastStartTime;
+					if (duration < 1000 && this.status === 'listening') {
+						console.warn('🛑 Speech recognition ended immediately (mic conflict). Stopping to prevent beeps.');
+						this.status = 'error';
+						this.error = 'Live transcription unavailable on this device while recording.';
+						return;
+					}
 					
 					// Only attempt restart if we are still supposed to be listening
 					if (this.status === 'listening' || (this.status === 'idle' && this.transcript)) {
