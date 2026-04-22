@@ -24,6 +24,7 @@ class Recorder {
 	audioUrl = $state<string | null>(null);
 	error = $state<string | null>(null);
 	analyser = $state<AnalyserNode | null>(null);
+	recordingDuration = $state(0);
 
 	// --- Private ---
 	private mediaRecorder: MediaRecorder | null = null;
@@ -31,9 +32,15 @@ class Recorder {
 	private stream: MediaStream | null = null;
 	private chunks: Blob[] = [];
 	private isRequestingStart = false;
+	private timerId: ReturnType<typeof setInterval> | null = null;
 
 	// --- Config ---
 	private readonly BITRATE = 128000; // 128kbps
+	readonly MAX_DURATION = 60000; // 1 minute in ms
+
+	// Derived
+	remainingSeconds = $derived(Math.max(0, Math.ceil((this.MAX_DURATION - this.recordingDuration) / 1000)));
+	isNearLimit = $derived(this.isRecording && this.remainingSeconds <= 10);
 
 	constructor() {
 		if (browser) {
@@ -172,6 +179,16 @@ class Recorder {
 			this.mediaRecorder.start();
 			this.status = 'recording';
 			console.log('🎤 Recording...');
+
+			// Start duration timer
+			this.recordingDuration = 0;
+			this.timerId = setInterval(() => {
+				this.recordingDuration += 100;
+				if (this.recordingDuration >= this.MAX_DURATION) {
+					console.log('⏰ Time limit reached, stopping...');
+					this.stop();
+				}
+			}, 100);
 		} catch (err: unknown) {
 			const error = err as Error;
 			console.error('Failed to start recording:', error);
@@ -187,6 +204,11 @@ class Recorder {
 	 */
 	async stop() {
 		this.isRequestingStart = false;
+
+		if (this.timerId) {
+			clearInterval(this.timerId);
+			this.timerId = null;
+		}
 
 		if (this.status === 'recording' && this.mediaRecorder) {
 			this.status = 'stopping';

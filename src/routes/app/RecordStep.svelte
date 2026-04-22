@@ -1,6 +1,7 @@
 <script lang="ts">
 	import RecordButton from '$lib/components/RecordButton.svelte';
 	import Waveform from '$lib/components/Waveform.svelte';
+	import CountdownTimer from '$lib/components/CountdownTimer.svelte';
 	import { InfoBox } from 'svelte-akui';
 	import { fade } from 'svelte/transition';
 
@@ -30,12 +31,14 @@
 	<p>
 		{#if recorder.status == 'initializing'}
 			Warming up the recorder…
-		{:else if recorder.isRecording}
-			Listening…
-		{:else}
+		{:else if !recorder.isRecording}
 			Hold down to record your voice note.
 		{/if}
 	</p>
+
+	{#if recorder.isRecording}
+		<CountdownTimer seconds={recorder.remainingSeconds} urgent={recorder.isNearLimit} />
+	{/if}
 
 	<RecordButton
 		isReady={recorder.isReady}
