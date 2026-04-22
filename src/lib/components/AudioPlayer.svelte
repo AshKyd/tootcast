@@ -11,6 +11,7 @@
 	let currentTime = $state(0);
 	let duration = $state(0);
 	let isExpanded = $state(false);
+	let isFocused = $state(false);
 
 	function formatTime(seconds: number) {
 		if (isNaN(seconds)) return '0:00';
@@ -29,13 +30,52 @@
 	}
 
 	function toggleTranscript() {
+		if (isFocused) {
+			isFocused = false;
+			return;
+		}
 		isExpanded = !isExpanded;
 	}
+
+	function handleFocus() {
+		isFocused = true;
+	}
+
+	function handleBlur() {
+		// Small delay to allow clicking the "Done" button
+		setTimeout(() => {
+			// Only blur if we're not in the middle of a viewport transition
+			if (window.visualViewport && window.visualViewport.height >= window.innerHeight * 0.8) {
+				isFocused = false;
+			}
+		}, 100);
+	}
+
+	import { onMount } from 'svelte';
+	onMount(() => {
+		if (!window.visualViewport) return;
+
+		const handleResize = () => {
+			const vv = window.visualViewport;
+			if (!vv) return;
+			
+			// If the viewport is nearly full height, the keyboard is likely hidden
+			if (vv.height >= window.innerHeight * 0.9 && isFocused) {
+				isFocused = false;
+				// Also blur the element to be sure
+				(document.activeElement as HTMLElement)?.blur?.();
+			}
+		};
+
+		window.visualViewport.addEventListener('resize', handleResize);
+		return () => window.visualViewport?.removeEventListener('resize', handleResize);
+	});
 </script>
 
 <div
 	class="audio-player"
 	class:expanded={isExpanded}
+	class:focused={isFocused}
 	class:has-transcript={transcriber.status !== 'unsupported' || transcriber.transcript}
 >
 	<Glow />
@@ -50,9 +90,16 @@
 	<div class="content-wrapper">
 		{#if isExpanded}
 			<div class="transcript-section" transition:fade={{ duration: 200 }}>
-				<div class="transcript-header">Alt Text (Transcription)</div>
+				<div class="transcript-header">
+					<span>Alt Text (Transcription)</span>
+					{#if isFocused}
+						<button class="done-btn" onclick={() => (isFocused = false)}>Done</button>
+					{/if}
+				</div>
 				<textarea
 					bind:value={transcriber.transcript}
+					onfocus={handleFocus}
+					onblur={handleBlur}
 					placeholder={transcriber.status === 'unsupported'
 						? 'Speech recognition not supported'
 						: 'No transcript generated...'}
@@ -101,10 +148,10 @@
 					variant={isExpanded ? 'accent' : 'ghost'}
 					radius="full"
 					iconPosition="only"
-					icon="chat-square-text"
+					icon={isFocused ? 'check2' : 'chat-square-text'}
 					size="large"
 					onclick={toggleTranscript}
-					aria-label="Toggle Transcript"
+					aria-label={isFocused ? 'Done Editing' : 'Toggle Transcript'}
 				></Button>
 			</div>
 		</div>
@@ -149,6 +196,39 @@
 		padding: 1.5rem;
 	}
 
+	.audio-player.focused {
+		/* Shared focus styles could go here, but mostly we care about mobile */
+	}
+
+	@media (max-width: 640px) {
+		.audio-player.focused {
+			position: fixed;
+			inset: 0;
+			z-index: 2000;
+			width: 100dvw;
+			height: 100dvh;
+			border-radius: 0;
+			padding: 2rem;
+			max-width: none;
+			background: var(--color-bg);
+			display: flex;
+			flex-direction: column;
+		}
+
+		.audio-player.focused .content-wrapper {
+			height: 100%;
+			justify-content: flex-start;
+		}
+
+		.audio-player.focused .transcript-section {
+			height: calc(100% - 80px);
+		}
+
+		.audio-player.focused .player-bar {
+			margin-top: auto;
+		}
+	}
+
 	:global([data-theme='light']) .audio-player {
 		background: white;
 	}
@@ -183,6 +263,22 @@
 		color: var(--akui-fg-secondary);
 		opacity: 0.5;
 		padding-left: 0.5rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		height: 24px;
+	}
+
+	.done-btn {
+		background: var(--akui-bg-accent);
+		color: white;
+		border: none;
+		border-radius: 12px;
+		padding: 2px 10px;
+		font-size: 0.75rem;
+		font-weight: 700;
+		cursor: pointer;
+		opacity: 1;
 	}
 
 	.transcript-editor {
@@ -199,6 +295,11 @@
 		padding: 0.5rem;
 		-webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
 		mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+	}
+
+	.audio-player.focused .transcript-editor {
+		-webkit-mask-image: none;
+		mask-image: none;
 	}
 
 	.player-bar {
