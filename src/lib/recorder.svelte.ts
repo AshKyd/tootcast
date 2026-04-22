@@ -38,11 +38,13 @@ class Recorder {
 
 	// --- Config ---
 	private readonly BITRATE = 128000; // 128kbps
-	readonly MAX_DURATION = 60000; // 1 minute in ms
+	get maxDurationMs() {
+		return (settings.data?.maxRecordingTime || 60) * 1000;
+	}
 
 	// Derived
-	remainingSeconds = $derived(Math.max(0, Math.ceil((this.MAX_DURATION - this.recordingDuration) / 1000)));
-	isNearLimit = $derived(this.isRecording && this.remainingSeconds <= 10);
+	remainingSeconds = $derived(Math.max(0, Math.ceil((this.maxDurationMs - this.recordingDuration) / 1000)));
+	isNearLimit = $derived(this.isRecording && this.remainingSeconds <= (settings.data?.warningThreshold || 10));
 
 	// --- MP3 Encoding (vmsg) ---
 	private vmsg: VmsgRecorder | null = null;
@@ -260,7 +262,7 @@ class Recorder {
 			this.recordingDuration = 0;
 			this.timerId = setInterval(() => {
 				this.recordingDuration += 100;
-				if (this.recordingDuration >= this.MAX_DURATION) {
+				if (this.recordingDuration >= this.maxDurationMs) {
 					console.log('⏰ Time limit reached, stopping...');
 					this.stop();
 				}

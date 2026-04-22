@@ -17,7 +17,7 @@
 </script>
 
 {#if recorder.isRecording && recorder.analyser}
-	<Waveform analyser={recorder.analyser} />
+	<Waveform analyser={recorder.analyser} urgent={recorder.isNearLimit} />
 {/if}
 
 <div class="record-step" transition:fade>

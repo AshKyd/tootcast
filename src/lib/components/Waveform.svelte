@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { analyser } = $props();
+	let { analyser, urgent = false } = $props();
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
@@ -32,7 +32,9 @@
 
 		// Get the accent color from Akui theme
 		const style = getComputedStyle(canvas);
-		const accentColor = style.getPropertyValue('--akui-bg-accent') || '#7c3aed';
+		const accentColor = urgent 
+			? 'oklch(65% 0.25 25)' // Red alert color
+			: (style.getPropertyValue('--akui-bg-accent') || '#7c3aed');
 
 		const history: Uint8Array[] = [];
 		const HISTORY_LIMIT = 6;

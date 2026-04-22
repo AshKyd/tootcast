@@ -22,11 +22,8 @@
 	});
 
 	$effect(() => {
-		if (recorder.isRecording) {
-			document.body.classList.add('recording');
-		} else {
-			document.body.classList.remove('recording');
-		}
+		document.body.classList.toggle('recording', recorder.isRecording);
+		document.body.classList.toggle('urgent', recorder.isNearLimit);
 	});
 
 	$effect(() => {

@@ -7,13 +7,17 @@ export interface UserSettings {
 	noiseCancellation: boolean;
 	addHashtag: boolean;
 	defaultVisibility: StatusVisibility;
+	maxRecordingTime: number;
+	warningThreshold: number;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
 	deviceId: '',
 	noiseCancellation: false,
 	addHashtag: true,
-	defaultVisibility: 'private'
+	defaultVisibility: 'private',
+	maxRecordingTime: 60,
+	warningThreshold: 10
 };
 
 class Settings {
@@ -71,7 +75,7 @@ class Settings {
 	 */
 	async unlockLabels() {
 		if (!browser || !navigator.mediaDevices) return;
-		
+
 		try {
 			console.log('🔓 Attempting to unlock device labels...');
 			const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });

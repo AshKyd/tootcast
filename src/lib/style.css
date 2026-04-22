@@ -32,6 +32,10 @@
 	/* Preview Gradient (Purple/Pink) */
 	--color-bg-preview: oklch(15% 0.1 300);
 	--color-bg-bottom-preview: oklch(7.82% 0.03779 318.705);
+
+	/* Urgent Gradient (Red Alert) */
+	--color-bg-urgent: oklch(15% 0.1 25);
+	--color-bg-bottom-urgent: oklch(10% 0.3 25);
 }
 
 [data-theme='light'] {
@@ -52,6 +56,10 @@
 	/* Preview Gradient (Light Mode) */
 	--color-bg-preview: oklch(95.313% 0.03381 316.76);
 	--color-bg-bottom-preview: oklch(100% 0.00011 271.152);
+
+	/* Urgent Gradient (Light Mode) */
+	--color-bg-urgent: oklch(96.421% 0.01755 25.768);
+	--color-bg-bottom-urgent: oklch(90.574% 0.04862 22.668);
 }
 
 body {
@@ -94,6 +102,14 @@ body::after {
 
 body.recording::before {
 	opacity: 1;
+}
+
+body.recording.urgent::before {
+	background: linear-gradient(
+		to bottom,
+		var(--color-bg-urgent) 0%,
+		var(--color-bg-bottom-urgent) 100%
+	);
 }
 
 body.preview::after {
