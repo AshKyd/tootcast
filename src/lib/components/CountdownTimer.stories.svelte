@@ -11,7 +11,7 @@
 </script>
 
 <Story name="Default" args={{ seconds: 45 }}>
-	{#snippet children(args)}
+	{#snippet children(args: any)}
 		<div
 			style="background: #080808; padding: 5rem; display: flex; justify-content: center; align-items: center; min-height: 200px; border-radius: 20px;"
 		>
@@ -21,7 +21,7 @@
 </Story>
 
 <Story name="Urgent" args={{ seconds: 8, urgent: true }}>
-	{#snippet children(args)}
+	{#snippet children(args: any)}
 		<div
 			style="background: #080808; padding: 5rem; display: flex; justify-content: center; align-items: center; min-height: 200px; border-radius: 20px;"
 		>
@@ -31,7 +31,7 @@
 </Story>
 
 <Story name="Final Seconds" args={{ seconds: 3, urgent: true }}>
-	{#snippet children(args)}
+	{#snippet children(args: any)}
 		<div
 			style="background: #080808; padding: 5rem; display: flex; justify-content: center; align-items: center; min-height: 200px; border-radius: 20px;"
 		>

@@ -17,7 +17,7 @@ class Transcriber {
 
 	constructor() {
 		if (browser) {
-			const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+			const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 			
 			if (SpeechRecognition) {
 				this.isSupported = true;
@@ -26,7 +26,7 @@ class Transcriber {
 				this.recognition.interimResults = false;
 				this.recognition.lang = 'en-US';
 
-				this.recognition.onresult = (event) => {
+				this.recognition.onresult = (event: any) => {
 					let finalTranscript = '';
 					for (let i = event.resultIndex; i < event.results.length; ++i) {
 						if (event.results[i].isFinal) {
@@ -38,7 +38,7 @@ class Transcriber {
 					}
 				};
 
-				this.recognition.onerror = (event) => {
+				this.recognition.onerror = (event: any) => {
 					console.error('Speech recognition error', event.error);
 					if (event.error === 'not-allowed') {
 						this.error = 'Speech recognition permission denied.';

@@ -1,15 +1,15 @@
 <script lang="ts">
 	import {
 		Button,
-		Loader, // Added Loader
 		MenuButton,
 		MenuItem,
 		Tooltip,
+		// @ts-ignore - createTooltip is exported but missing from types
 		createTooltip,
 		Padding
 	} from 'svelte-akui';
 	import { onMount } from 'svelte';
-	import { postVoiceNote, type StatusVisibility } from '$lib/mastodon';
+	import { type StatusVisibility } from '$lib/mastodon';
 	import { settings } from '$lib/settings.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 	import { auth } from '$lib/auth.svelte';
@@ -18,7 +18,7 @@
 	import { fade } from 'svelte/transition';
 	import { transcriber } from '$lib/transcriber.svelte';
 
-	let { recorder, ondiscard, onerror, onsend } = $props();
+	let { recorder, ondiscard, onsend } = $props();
 
 	let visibility = $state<StatusVisibility>(settings.data.defaultVisibility);
 
