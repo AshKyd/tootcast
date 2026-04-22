@@ -50,6 +50,7 @@
 	<div class="content-wrapper">
 		{#if isExpanded}
 			<div class="transcript-section" transition:fade={{ duration: 200 }}>
+				<div class="transcript-header">Alt Text (Transcription)</div>
 				<textarea
 					bind:value={transcriber.transcript}
 					placeholder={transcriber.status === 'unsupported'
@@ -95,19 +96,17 @@
 				</div>
 			</div>
 
-			{#if transcriber.status !== 'unsupported' || transcriber.transcript}
-				<div class="control">
-					<Button
-						variant={isExpanded ? 'accent' : 'ghost'}
-						radius="full"
-						iconPosition="only"
-						icon="chat-square-text"
-						size="large"
-						onclick={toggleTranscript}
-						aria-label="Toggle Transcript"
-					></Button>
-				</div>
-			{/if}
+			<div class="control">
+				<Button
+					variant={isExpanded ? 'accent' : 'ghost'}
+					radius="full"
+					iconPosition="only"
+					icon="chat-square-text"
+					size="large"
+					onclick={toggleTranscript}
+					aria-label="Toggle Transcript"
+				></Button>
+			</div>
 		</div>
 	</div>
 </div>
@@ -173,6 +172,17 @@
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.transcript-header {
+		font-size: 0.65rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		font-weight: 700;
+		color: var(--akui-fg-secondary);
+		opacity: 0.5;
+		padding-left: 0.5rem;
 	}
 
 	.transcript-editor {
