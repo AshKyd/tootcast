@@ -97,11 +97,28 @@ class Recorder {
 	}
 
 	/**
+	 * Preloads the WASM encoder worker.
+	 * This can be called on page load to avoid delay when starting a recording.
+	 */
+	async preload() {
+		if (!browser || this.vmsg) return;
+
+		try {
+			console.log('🎙️ Preloading vmsg WASM...');
+			this.vmsg = new VmsgRecorder({ wasmURL: this.wasmURL });
+			await this.vmsg.initWorker();
+			console.log('✅ vmsg: MP3 Encoder (WASM) Preloaded.');
+		} catch (err) {
+			console.warn('⚠️ WASM preloading failed:', err);
+		}
+	}
+
+	/**
 	 * Preemptively initializes the audio engine.
 	 * Requests permissions and prepares the AudioContext.
 	 */
 	async init() {
-		if (!browser || this.status !== 'idle') return;
+		if (!browser || (this.status !== 'idle' && this.status !== 'error')) return;
 		this.status = 'initializing';
 
 		try {
@@ -135,9 +152,11 @@ class Recorder {
 
 			// --- AudioEncoder Diagnostic ---
 			// --- MP3 Encoding (vmsg) ---
-			this.vmsg = new VmsgRecorder({ wasmURL: this.wasmURL });
-			await this.vmsg.initWorker();
-			console.log('🎙️ vmsg: MP3 Encoder (WASM) Initialized');
+			if (!this.vmsg) {
+				this.vmsg = new VmsgRecorder({ wasmURL: this.wasmURL });
+				await this.vmsg.initWorker();
+				console.log('🎙️ vmsg: MP3 Encoder (WASM) Initialized');
+			}
 
 			if (this.audioContext.state === 'suspended') {
 				await this.audioContext.resume();

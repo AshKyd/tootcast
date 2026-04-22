@@ -29,6 +29,7 @@
 	onMount(async () => {
 		await auth.init();
 		await recorder.loadFromStore();
+		recorder.preload(); // Load WASM early without waiting for interaction
 	});
 
 	async function handleLogout() {
