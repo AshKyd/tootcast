@@ -92,7 +92,7 @@
 			{#if transcriber.status !== 'unsupported' || transcriber.transcript}
 				<div class="control">
 					<Button
-						variant={isExpanded ? 'accent' : 'regular'}
+						variant={isExpanded ? 'accent' : 'ghost'}
 						radius="full"
 						iconPosition="only"
 						icon="chat-square-text"
@@ -120,7 +120,7 @@
 		backdrop-filter: blur(20px);
 		-webkit-backdrop-filter: blur(20px);
 		border: 1px solid var(--akui-border-input);
-		border-radius: 100px;
+		border-radius: 33px; /* Perfect capsule for 66px height */
 		/* Horizontal padding is mirrored in PlaybackStep.svelte .actions-row for alignment */
 		padding: 0 1rem;
 		display: flex;
@@ -131,12 +131,12 @@
 		background: #ffffff08;
 		transition:
 			height var(--transition-smooth),
-			border-radius var(--transition-smooth);
+			background-color var(--transition-smooth),
+			padding var(--transition-smooth);
 	}
 
 	.audio-player.expanded {
 		height: 280px;
-		border-radius: 32px;
 		padding: 1.5rem;
 	}
 
