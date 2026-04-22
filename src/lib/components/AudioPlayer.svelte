@@ -75,13 +75,17 @@
 	.audio-player {
 		width: 100%;
 		max-width: 600px;
+		height: 66px;
 		overflow: hidden;
 		position: relative;
 		backdrop-filter: blur(20px);
 		-webkit-backdrop-filter: blur(20px);
 		border: 1px solid var(--akui-border-input);
 		border-radius: 100px;
-		padding: 0.4rem 2rem 0.4rem 0.75rem;
+		/* Horizontal padding is mirrored in PlaybackStep.svelte .actions-row for alignment */
+		padding: 0 2rem 0 0.5rem;
+		display: flex;
+		align-items: center;
 		box-shadow:
 			0 10px 30px rgba(0, 0, 0, 0.2),
 			inset 0 0 0 1px var(--akui-border-secondary);
@@ -90,17 +94,16 @@
 	.player-bar {
 		display: flex;
 		align-items: center;
-		justify-content: center;
 		gap: 1.25rem;
+		width: 100%;
 	}
 
 	.track-area {
 		flex: 1;
 		position: relative;
-		height: 56px;
+		height: 100%;
 		display: flex;
 		align-items: center;
-		overflow: hidden;
 	}
 
 	.scrubber-container {

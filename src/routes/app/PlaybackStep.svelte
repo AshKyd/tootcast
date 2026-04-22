@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { Button, LoaderOverlay, MenuButton, MenuItem, Tooltip, createTooltip, Padding } from 'svelte-akui';
+	import {
+		Button,
+		LoaderOverlay,
+		MenuButton,
+		MenuItem,
+		Tooltip,
+		createTooltip,
+		Padding
+	} from 'svelte-akui';
 	import { onMount } from 'svelte';
 	import { postVoiceNote, type StatusVisibility } from '$lib/mastodon';
 	import { settings } from '$lib/settings.svelte';
@@ -95,15 +103,16 @@
 		>
 			<Padding size="s">Delete and start over</Padding>
 		</Tooltip>
+		<!-- Offset the 1.5rem internal padding of the large ghost button to align its icon with the player -->
 		<Button
-			variant="regular"
+			variant="ghost"
 			icon="trash"
-			iconPosition="only"
-			label="Discard"
+			iconPosition="left"
+			label="Delete"
 			onclick={handleDiscard}
 			disabled={isUploading}
 			size="large"
-			{...(isMouse ? deleteT.handlers : {})}
+			{...isMouse ? deleteT.handlers : {}}
 		/>
 
 		<div class="spacer"></div>
@@ -122,7 +131,7 @@
 			size="large"
 			disabled={isUploading}
 			origin="bottom-right"
-			{...(isMouse ? privacyT.handlers : {})}
+			{...isMouse ? privacyT.handlers : {}}
 		>
 			{#snippet menu()}
 				{#each visibilityOptions as option}
@@ -139,27 +148,28 @@
 			<Button
 				variant="accent"
 				icon="send"
-				iconPosition="right"
-				label="Post it!"
+				iconPosition="left"
+				label="Post"
 				onclick={handleSend}
 				disabled={isUploading}
 				size="large"
-				style="min-width: 10em;"
+				class="post-button"
 			/>
 		{:else}
 			<Button
 				variant="accent"
 				icon="box-arrow-in-right"
-				iconPosition="right"
-				label="Login to Post"
+				iconPosition="left"
 				onclick={async () => {
 					await recorder.saveToStore();
 					goto(resolve('/login'));
 				}}
 				disabled={isUploading}
 				size="large"
-				style="min-width: 10em;"
-			/>
+				class="post-button"
+			>
+				Login<span class="no-mobile"> to Post</span>
+			</Button>
 		{/if}
 	</div>
 </div>
@@ -177,6 +187,10 @@
 		padding: 2rem;
 	}
 
+	.spacer {
+		flex: 1;
+	}
+
 	.player-wrapper {
 		width: 100%;
 		max-width: 600px;
@@ -189,11 +203,23 @@
 		gap: 0.5rem;
 		width: 100%;
 		max-width: 600px;
-		padding-left: 0.75rem;
-		padding-right: 2rem;
+		/* Match AudioPlayer internal padding to keep buttons aligned with player controls */
+		padding: 0 2rem 0 0;
 	}
 
-	.spacer {
-		flex: 1;
+	:global(.post-button) {
+		min-width: 10em;
+	}
+
+	@media (max-width: 640px) {
+		.playback-step {
+			padding: 0;
+		}
+		.actions-row {
+			padding-right: 0;
+		}
+		:global(.playback-step .post-button) {
+			min-width: 0 !important;
+		}
 	}
 </style>

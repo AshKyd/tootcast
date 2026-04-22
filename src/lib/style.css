@@ -125,3 +125,9 @@ p {
 .m-b-l {
 	margin-bottom: var(--spacing-l);
 }
+
+@media (max-width: 640px) {
+	.no-mobile {
+		display: none !important;
+	}
+}
