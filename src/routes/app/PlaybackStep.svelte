@@ -189,6 +189,8 @@
 		gap: 0.5rem;
 		width: 100%;
 		max-width: 600px;
+		padding-left: 0.75rem;
+		padding-right: 2rem;
 	}
 
 	.spacer {
