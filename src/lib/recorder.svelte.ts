@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { settings } from './settings.svelte';
 import { db } from './db';
 import { transcriber } from './transcriber.svelte';
+import { encodeWAV } from './wav';
 
 export type RecorderStatus = 'idle' | 'initializing' | 'ready' | 'recording' | 'stopping' | 'error';
 
@@ -42,6 +43,35 @@ class Recorder {
 	// Derived
 	remainingSeconds = $derived(Math.max(0, Math.ceil((this.MAX_DURATION - this.recordingDuration) / 1000)));
 	isNearLimit = $derived(this.isRecording && this.remainingSeconds <= 10);
+
+	// --- Raw PCM Collection ---
+	private leftChannel: Float32Array[] = [];
+	private rightChannel: Float32Array[] = [];
+	private recordedLength = 0;
+	private processor: ScriptProcessorNode | null = null;
+
+	/**
+	 * Detects the best available audio MIME type for the current browser.
+	 * Prioritizes formats that Mastodon handles well without spoof-detection issues.
+	 */
+	private getSupportedMimeType(): string {
+		if (typeof MediaRecorder === 'undefined') return 'audio/webm';
+
+		const types = [
+			'audio/ogg;codecs=opus',
+			'audio/mp4',
+			'audio/webm;codecs=opus',
+			'audio/webm',
+			'audio/aac',
+			'audio/wav',
+			'audio/flac'
+		];
+
+		const supported = types.filter((t) => MediaRecorder.isTypeSupported(t));
+		console.log('🎙️ Supported MIME types:', supported);
+
+		return types.find((t) => MediaRecorder.isTypeSupported(t)) || '';
+	}
 
 	constructor() {
 		if (browser) {
@@ -147,39 +177,41 @@ class Recorder {
 
 			// If user cancelled or initialization failed skip starting
 			if (!this.isRequestingStart || this.status !== 'ready') {
-				console.log('🛑 Recording start aborted.');
 				this.disconnect();
 				return;
 			}
 
-			if (!this.stream) throw new Error('No audio stream available.');
+			if (!this.stream || !this.audioContext) throw new Error('No audio stream available.');
 
-			this.chunks = [];
-			this.mediaRecorder = new MediaRecorder(this.stream, {
-				audioBitsPerSecond: this.BITRATE
-			});
+			// Reset buffers
+			this.leftChannel = [];
+			this.rightChannel = [];
+			this.recordedLength = 0;
 
-			this.mediaRecorder.ondataavailable = (e) => {
-				if (e.data.size > 0) {
-					this.chunks.push(e.data);
-				}
-			};
-
-			this.mediaRecorder.onstop = () => {
-				this.audioBlob = new Blob(this.chunks, {
-					type: this.mediaRecorder?.mimeType || 'audio/webm'
-				});
-				this.audioUrl = URL.createObjectURL(this.audioBlob);
+			// Create ScriptProcessor for raw PCM capture
+			// 2048 buffer size for more frequent updates
+			this.processor = this.audioContext.createScriptProcessor(2048, 2, 2);
+			
+			this.processor.onaudioprocess = (e) => {
+				// IMPORTANT: Allow collection during 'stopping' state to capture the tail!
+				if (this.status !== 'recording' && this.status !== 'stopping') return;
 				
-				// 🔌 Fully hang up and disconnect everything
-				this.disconnect();
-
-				console.log('💾 Recording saved. Format:', this.audioBlob.type);
+				const left = e.inputBuffer.getChannelData(0);
+				const right = e.inputBuffer.getChannelData(1);
+				
+				// We must clone the typed arrays because the underlying buffer is reused by the browser
+				this.leftChannel.push(new Float32Array(left));
+				this.rightChannel.push(new Float32Array(right));
+				this.recordedLength += left.length;
 			};
 
-			this.mediaRecorder.start();
+			// Connect the chain
+			const source = this.audioContext.createMediaStreamSource(this.stream);
+			source.connect(this.processor);
+			this.processor.connect(this.audioContext.destination);
+
 			this.status = 'recording';
-			console.log('🎤 Recording...');
+			console.log('🎤 Recording Lossless PCM...');
 			transcriber.start();
 
 			// Start duration timer
@@ -201,8 +233,7 @@ class Recorder {
 	}
 
 	/**
-	 * Stops recording.
-	 * Includes a small 300ms buffer to ensure final audio snippets are captured.
+	 * Stops recording and encodes the final WAV.
 	 */
 	async stop() {
 		this.isRequestingStart = false;
@@ -213,13 +244,51 @@ class Recorder {
 			this.timerId = null;
 		}
 
-		if (this.status === 'recording' && this.mediaRecorder) {
+		if (this.status === 'recording' && this.processor && this.audioContext) {
 			this.status = 'stopping';
-			// ⏳ Wait 300ms to ensure the entire audio buffer is encoded.
+			
+			// ⏳ Wait a moment to ensure the final buffer chunks are processed.
 			await new Promise((resolve) => setTimeout(resolve, 300));
-			this.mediaRecorder.stop();
+
+			// Disconnect processor
+			this.processor.disconnect();
+			this.processor.onaudioprocess = null;
+
+			try {
+				console.log('🔄 Encoding lossless WAV...');
+				
+				// Flatten buffers into a single AudioBuffer
+				const audioBuffer = this.audioContext.createBuffer(
+					2, 
+					this.recordedLength, 
+					this.audioContext.sampleRate
+				);
+
+				const leftData = audioBuffer.getChannelData(0);
+				const rightData = audioBuffer.getChannelData(1);
+
+				let offset = 0;
+				for (const chunk of this.leftChannel) {
+					leftData.set(chunk, offset);
+					offset += chunk.length;
+				}
+
+				offset = 0;
+				for (const chunk of this.rightChannel) {
+					rightData.set(chunk, offset);
+					offset += chunk.length;
+				}
+
+				this.audioBlob = encodeWAV(audioBuffer);
+				console.log('✅ WAV Ready (Lossless):', this.audioBlob.size, 'bytes');
+			} catch (err) {
+				console.error('❌ WAV Encoding failed:', err);
+				this.error = 'Failed to process audio data.';
+			}
+
+			this.audioUrl = URL.createObjectURL(this.audioBlob!);
+			this.disconnect();
 		} else if (this.status === 'initializing' || this.status === 'ready') {
-			// Cancelling before recording actually started
 			this.disconnect();
 		}
 	}

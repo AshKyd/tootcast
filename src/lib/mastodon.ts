@@ -114,40 +114,28 @@ export type StatusVisibility = 'public' | 'unlisted' | 'private' | 'direct';
 /**
  * Uploads a voice note to Mastodon.
  */
-export async function postVoiceNote(
-	blob: Blob,
-	text?: string,
-	visibility: StatusVisibility = 'public'
-): Promise<Status> {
+export async function postVoiceNote({
+	blob,
+	text,
+	description,
+	visibility = 'public'
+}: {
+	blob: Blob;
+	text?: string;
+	description?: string;
+	visibility?: StatusVisibility;
+}): Promise<Status> {
 	const client = await getMastoClient();
 	if (!client) throw new Error('Not authenticated with Mastodon.');
 
-	// Mastodon is picky about MIME types.
-	// CHROME FIX: WebM is technically a video container.
-	// Reporting it as 'audio/opus' with a '.opus' extension helps bypass the video-spoof-detector.
-	let mimeType = blob.type.split(';')[0];
-	let extension = 'ogg';
+	const filename = `voicenote_${Date.now()}.wav`;
+	const file = new File([blob], filename, { type: 'audio/wav' });
 
-	if (mimeType.includes('webm')) {
-		mimeType = 'audio/opus'; // The "hint" for Chrome WebM
-		extension = 'opus';
-	} else if (mimeType.includes('mp4')) {
-		mimeType = 'audio/mp4';
-		extension = 'm4a';
-	} else if (mimeType.includes('ogg')) {
-		mimeType = 'audio/ogg';
-		extension = 'ogg';
-	}
-
-	const filename = `voicenote_${Date.now()}.${extension}`;
-	const file = new File([blob], filename, { type: mimeType });
-
-	console.log('📡 Mastodon: Preparing upload (Normalized)...');
+	console.log('📡 Mastodon: Preparing upload...');
 	console.table({
 		filename,
-		mimeType,
-		reportedSize: `${(blob.size / 1024).toFixed(2)} KB`,
-		blobOriginType: blob.type
+		mimeType: 'audio/wav',
+		reportedSize: `${(blob.size / 1024).toFixed(2)} KB`
 	});
 
 	try {
@@ -155,7 +143,7 @@ export async function postVoiceNote(
 		console.log('📡 Mastodon: Uploading media...');
 		const attachment = await client.v1.media.create({
 			file,
-			description: 'Voice note recorded with TootCast'
+			description: description || 'Voice note recorded with TootCast'
 		});
 		console.log('✅ Mastodon: Media uploaded', attachment.id);
 

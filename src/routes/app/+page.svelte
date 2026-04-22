@@ -62,6 +62,18 @@
 		<MenuButton icon="list" variant="regular" size="small" origin="bottom-right">
 			{#snippet menu()}
 				<MenuItem label="Settings" icon="gear" onclick={() => (isSettingsOpen = true)} />
+				{#if recorder.audioUrl}
+					<MenuItem
+						label="Download WAV"
+						icon="download"
+						onclick={() => {
+							const a = document.createElement('a');
+							a.href = recorder.audioUrl!;
+							a.download = `voicenote_${Date.now()}.wav`;
+							a.click();
+						}}
+					/>
+				{/if}
 				{#if auth.session}
 					<MenuItem
 						label="Logout (@{auth.session?.instance})"

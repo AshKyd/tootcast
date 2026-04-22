@@ -64,11 +64,15 @@
 		onerror(null);
 
 		try {
-			let statusText = settings.data.addHashtag ? '#VoiceNote' : '';
-			if (transcriber.transcript) {
-				statusText = `${transcriber.transcript.trim()}\n\n${statusText}`.trim();
-			}
-			const status = await postVoiceNote(recorder.audioBlob, statusText, visibility);
+			const statusText = settings.data.addHashtag ? '#VoiceNote' : '';
+			const altText = transcriber.transcript?.trim() || 'Voice note recorded with TootCast';
+			
+			const status = await postVoiceNote({
+				blob: recorder.audioBlob,
+				text: statusText,
+				description: altText,
+				visibility
+			});
 			await recorder.clearStore();
 			recorder.discard();
 			onsuccess(status.url);

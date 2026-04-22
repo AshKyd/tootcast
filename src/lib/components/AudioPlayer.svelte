@@ -200,6 +200,12 @@
 		flex-shrink: 0;
 	}
 
+	.control-group {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+
 	.track-area {
 		flex: 1;
 		position: relative;
