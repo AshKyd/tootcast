@@ -200,7 +200,11 @@
 	}
 
 	.icon-wrapper {
-		position: relative;
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		z-index: 10;
 		color: white;
 		filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
