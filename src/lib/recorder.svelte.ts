@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { settings } from './settings.svelte';
 import { db } from './db';
+import { transcriber } from './transcriber.svelte';
 
 export type RecorderStatus = 'idle' | 'initializing' | 'ready' | 'recording' | 'stopping' | 'error';
 
@@ -179,6 +180,7 @@ class Recorder {
 			this.mediaRecorder.start();
 			this.status = 'recording';
 			console.log('🎤 Recording...');
+			transcriber.start();
 
 			// Start duration timer
 			this.recordingDuration = 0;
@@ -204,6 +206,7 @@ class Recorder {
 	 */
 	async stop() {
 		this.isRequestingStart = false;
+		transcriber.stop();
 
 		if (this.timerId) {
 			clearInterval(this.timerId);
@@ -230,6 +233,7 @@ class Recorder {
 		this.audioUrl = null;
 		this.error = null;
 		this.mediaRecorder = null;
+		transcriber.reset();
 		// disconnect handles turning state to idle
 		if (this.status !== 'idle') this.disconnect();
 		await this.clearStore();
@@ -243,6 +247,7 @@ class Recorder {
 		console.log('💾 Persisting audio to IndexedDB...');
 		await db.set('pending_audio_blob', this.audioBlob);
 		await db.set('pending_audio_type', this.audioBlob.type);
+		await transcriber.saveToStore();
 	}
 
 	/**
@@ -259,6 +264,7 @@ class Recorder {
 			this.audioBlob = new Blob([blob], { type });
 			this.audioUrl = URL.createObjectURL(this.audioBlob);
 		}
+		await transcriber.loadFromStore();
 	}
 
 	/**
@@ -267,6 +273,7 @@ class Recorder {
 	async clearStore() {
 		await db.delete('pending_audio_blob');
 		await db.delete('pending_audio_type');
+		await transcriber.clearStore();
 	}
 }
 

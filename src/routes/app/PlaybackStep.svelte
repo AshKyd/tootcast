@@ -16,6 +16,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
+	import { transcriber } from '$lib/transcriber.svelte';
 
 	let { recorder, onsuccess, ondiscard, onerror } = $props();
 
@@ -63,7 +64,10 @@
 		onerror(null);
 
 		try {
-			const statusText = settings.data.addHashtag ? '#VoiceNote' : '';
+			let statusText = settings.data.addHashtag ? '#VoiceNote' : '';
+			if (transcriber.transcript) {
+				statusText = `${transcriber.transcript.trim()}\n\n${statusText}`.trim();
+			}
 			const status = await postVoiceNote(recorder.audioBlob, statusText, visibility);
 			await recorder.clearStore();
 			recorder.discard();
