@@ -14,7 +14,7 @@
 		"format": "prettier --write .",
 		"storybook": "storybook dev -p 6006 --ci",
 		"build-storybook": "storybook build",
-		"fetch-models": "bash scripts/fetch-models.sh"
+		"fetch-models": "sh scripts/fetch-models.sh"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.3",
