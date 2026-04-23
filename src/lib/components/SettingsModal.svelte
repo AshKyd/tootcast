@@ -2,7 +2,7 @@
 	import { Modal, Padding, Button, Select, Small } from 'svelte-akui';
 	import { settings } from '$lib/settings.svelte';
 	import { recorder } from '$lib/recorder.svelte';
-	import { Mic, Hash } from 'svelte-bootstrap-icons';
+	import { Mic, Hash, ChatSquareText } from 'svelte-bootstrap-icons';
 
 	let { onClose } = $props<{ onClose: () => void }>();
 	let isSearching = $state(false);
@@ -98,6 +98,36 @@
 							type="checkbox"
 							bind:checked={settings.data.addHashtag}
 							onchange={() => settings.save()}
+						/>
+					</label>
+				</div>
+			</section>
+
+			<section class="settings-section mt-8">
+				<header class="section-header">
+					<ChatSquareText width="18" height="18" />
+					<h3>Transcription</h3>
+				</header>
+
+				<div class="control-list">
+					<label class="control-row" style="flex-direction: column; align-items: flex-start; gap: 0.75rem;">
+						<div class="control-label">
+							<span class="title">Whisper Model</span>
+							<Small>Select the language model used for automatic transcription.</Small>
+						</div>
+						<Select
+							bind:value={settings.data.whisperModel}
+							options={[
+								{ value: 'english', label: 'English' },
+								{ value: 'multilingual', label: 'Multilingual' },
+								{ value: 'none', label: 'None' }
+							]}
+							onchange={() => {
+								settings.save();
+								// We don't re-init transcriber here to avoid unnecessary downloads
+								// It will pick up the change next time it's used
+							}}
+							style="width: 100%;"
 						/>
 					</label>
 				</div>

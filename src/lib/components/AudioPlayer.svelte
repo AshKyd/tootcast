@@ -2,8 +2,12 @@
 	import { Button, Glow } from 'svelte-akui';
 	import { fade, fly } from 'svelte/transition';
 	import { transcript } from '$lib/transcript.svelte';
+	import { transcriber } from '$lib/transcriber.svelte';
+	import { settings } from '$lib/settings.svelte';
+	import type { Recorder } from '$lib/recorder.svelte';
 
-	let { src } = $props<{ src: string }>();
+	let { recorder } = $props<{ recorder: Recorder }>();
+	let src = $derived(recorder.audioUrl);
 
 	let isPaused = $state(true);
 	let currentTime = $state(0);
@@ -90,9 +94,34 @@
 			<div class="transcript-section" transition:fade={{ duration: 200 }}>
 				<div class="transcript-header">
 					<span>Alt Text (Transcription)</span>
-					{#if isFocused}
-						<button class="done-btn" onclick={() => (isFocused = false)}>Done</button>
-					{/if}
+					<div class="header-actions">
+						{#if settings.data.whisperModel !== 'none'}
+							{#if transcriber.status === 'idle'}
+								<button
+									class="action-btn"
+									onclick={() => recorder.audioBlob && transcriber.transcribe(recorder.audioBlob)}
+								>
+									Create Transcript
+								</button>
+							{:else if transcriber.status === 'error'}
+								<button
+									class="action-btn error"
+									onclick={() => recorder.audioBlob && transcriber.transcribe(recorder.audioBlob)}
+								>
+									Retry Transcription
+								</button>
+							{:else}
+								<span class="status-msg">
+									{transcriber.status === 'loading'
+										? `Downloading... ${Math.round(transcriber.progress)}%`
+										: 'Transcribing...'}
+								</span>
+							{/if}
+						{/if}
+						{#if isFocused}
+							<button class="done-btn" onclick={() => (isFocused = false)}>Done</button>
+						{/if}
+					</div>
 				</div>
 				<textarea
 					bind:value={$transcript}
@@ -265,7 +294,8 @@
 		height: 24px;
 	}
 
-	.done-btn {
+	.done-btn,
+	.action-btn {
 		background: var(--akui-bg-accent);
 		color: white;
 		border: none;
@@ -275,6 +305,40 @@
 		font-weight: 700;
 		cursor: pointer;
 		opacity: 1;
+		transition: transform 0.1s ease;
+	}
+
+	.action-btn:hover {
+		transform: scale(1.05);
+	}
+
+	.action-btn.error {
+		background: var(--akui-bg-error, #ff4444);
+	}
+
+	.header-actions {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+
+	.status-msg {
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--akui-bg-accent);
+		animation: pulse 2s infinite;
+	}
+
+	@keyframes pulse {
+		0% {
+			opacity: 0.6;
+		}
+		50% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0.6;
+		}
 	}
 
 	.transcript-editor {

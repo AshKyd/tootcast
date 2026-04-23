@@ -9,6 +9,7 @@ export interface UserSettings {
 	defaultVisibility: StatusVisibility;
 	maxRecordingTime: number;
 	warningThreshold: number;
+	whisperModel: 'english' | 'multilingual' | 'none';
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -17,7 +18,8 @@ const DEFAULT_SETTINGS: UserSettings = {
 	addHashtag: true,
 	defaultVisibility: 'private',
 	maxRecordingTime: 60,
-	warningThreshold: 10
+	warningThreshold: 10,
+	whisperModel: 'english'
 };
 
 class Settings {

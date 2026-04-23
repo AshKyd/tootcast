@@ -80,7 +80,7 @@
 		</div>
 	{/if}
 	<div class="player-wrapper">
-		<AudioPlayer src={recorder.audioUrl} />
+		<AudioPlayer {recorder} />
 	</div>
 
 	<div class="actions-row">

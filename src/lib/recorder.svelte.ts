@@ -11,7 +11,7 @@ export type RecorderStatus = 'idle' | 'initializing' | 'ready' | 'recording' | '
  * Using Svelte 5 Runes for global reactivity.
  * Refactored into a state machine for robustness.
  */
-class Recorder {
+export class Recorder {
 	// --- State ($state) ---
 	status = $state<RecorderStatus>('idle');
 	
@@ -268,7 +268,6 @@ class Recorder {
 
 			this.status = 'recording';
 			console.log('🎤 Recording MP3 (WASM)...');
-			transcriber.start();
 
 			// Start duration timer
 			this.recordingDuration = 0;
