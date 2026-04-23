@@ -49,8 +49,11 @@
 </div>
 
 <style>
+	.setup-step {
+		width: calc(100% - 2rem);
+		max-width: 420px;
+	}
 	.setup-content {
-		width: 420px;
 		max-width: 100%;
 	}
 	.link-btn {
