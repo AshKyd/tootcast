@@ -205,6 +205,12 @@ p {
 .gap-s {
 	gap: 0.5rem;
 }
+.responsive-panel {
+	width: 100%;
+	max-width: 420px;
+	padding: 0 1rem;
+	box-sizing: border-box;
+}
 .p-m {
 	padding: var(--spacing-m);
 }

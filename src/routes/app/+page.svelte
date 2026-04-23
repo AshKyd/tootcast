@@ -143,7 +143,7 @@
 
 	<div class="main-content">
 		{#if success || isUploading}
-			<div class="success-screen" in:fly={{ y: 20 }}>
+			<div class="success-screen responsive-panel" transition:fly={{ y: 20 }}>
 				<Panel>
 					<Padding size="l">
 						<div class="text-center success-panel-content">
@@ -239,8 +239,7 @@
 
 	.success-panel-content {
 		min-height: 280px;
-		width: 400px;
-		max-width: 100%;
+		width: 100%;
 		display: flex;
 		flex-direction: column;
 		align-items: center;

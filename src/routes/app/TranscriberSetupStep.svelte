@@ -8,7 +8,7 @@
 	}
 </script>
 
-<div class="setup-step" in:fly={{ y: 20 }}>
+<div class="setup-step responsive-panel" in:fly={{ y: 20 }}>
 	<Panel>
 		<Padding size="l">
 			<div class="setup-content">
@@ -49,13 +49,6 @@
 </div>
 
 <style>
-	.setup-step {
-		width: calc(100% - 2rem);
-		max-width: 420px;
-	}
-	.setup-content {
-		max-width: 100%;
-	}
 	.link-btn {
 		background: none;
 		border: none;
