@@ -23,7 +23,6 @@ class Logger {
 					})
 					.join(' ');
 				
-				// Batching updates could be necessary, but this is fine for debug
 				this.logs.push(`${prefix}${message}`);
 				if (this.logs.length > 200) this.logs.shift();
 			};

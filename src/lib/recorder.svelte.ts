@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { settings } from './settings.svelte';
 import { db } from './db';
-import { transcriber } from './transcriber.svelte';
+import { transcript } from './transcript.svelte';
 import { Recorder as VmsgRecorder } from 'vmsg';
 
 export type RecorderStatus = 'idle' | 'initializing' | 'ready' | 'recording' | 'stopping' | 'error';
@@ -137,13 +137,7 @@ class Recorder {
 				}
 			};
 			console.log('🔧 Constraints:', JSON.stringify(constraints));
-
 			this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-			
-			const track = this.stream.getAudioTracks()[0];
-			if (track) {
-				console.log('🎛️ Acquired Track:', track.label, JSON.stringify(track.getSettings()));
-			}
 
 			// Refresh device list now that we have permission (labels will be visible)
 			await settings.refreshDevices();
@@ -154,6 +148,17 @@ class Recorder {
 				(window as Window & typeof globalThis & { webkitAudioContext: typeof AudioContext })
 					.webkitAudioContext;
 			this.audioContext = new AudioContextClass();
+			
+			// Prepare AudioContext
+			if (!this.audioContext) {
+				this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+			}
+
+			if (this.audioContext.state === 'suspended') {
+				await this.audioContext.resume();
+			}
+			console.log(`🔊 AudioContext ready (State: ${this.audioContext.state}, Rate: ${this.audioContext.sampleRate}Hz)`);
+			
 			const source = this.audioContext.createMediaStreamSource(this.stream);
 			this.analyser = this.audioContext.createAnalyser();
 			this.analyser.fftSize = 256;
@@ -170,7 +175,6 @@ class Recorder {
 			if (this.audioContext.state === 'suspended') {
 				await this.audioContext.resume();
 			}
-			console.log(`🔊 AudioContext ready (State: ${this.audioContext.state}, Rate: ${this.audioContext.sampleRate}Hz)`);
 
 			this.status = 'ready';
 			console.log('✅ Recorder Ready.');
@@ -202,7 +206,7 @@ class Recorder {
 	async start() {
 		try {
 			// Clean out any existing transcription and audio state when we start a new recording
-			transcriber.reset();
+			transcript.set('');
 			this.audioBlob = null;
 			this.audioUrl = null;
 			await this.clearStore();
@@ -289,7 +293,7 @@ class Recorder {
 	 */
 	async stop() {
 		this.isRequestingStart = false;
-		transcriber.stop();
+		// No-op for transcript store
 
 		if (this.timerId) {
 			clearInterval(this.timerId);
@@ -348,12 +352,14 @@ class Recorder {
 	 * Reset the current voice note state and ensure resources are disconnected.
 	 */
 	async discard() {
-		this.stop(); 
-		this.audioBlob = null;
-		this.audioUrl = null;
+		if (this.audioUrl) {
+			URL.revokeObjectURL(this.audioUrl);
+			this.audioUrl = null;
+		}
 		this.error = null;
-		this.mediaRecorder = null;
-		transcriber.reset();
+		this.status = 'idle';
+		this.recordingDuration = 0;
+		transcript.set('');
 		// disconnect handles turning state to idle
 		if (this.status !== 'idle') this.disconnect();
 		await this.clearStore();
@@ -365,9 +371,7 @@ class Recorder {
 	async saveToStore() {
 		if (!this.audioBlob) return;
 		console.log('💾 Persisting audio to IndexedDB...');
-		await db.set('pending_audio_blob', this.audioBlob);
-		await db.set('pending_audio_type', this.audioBlob.type);
-		await transcriber.saveToStore();
+		await db.set('pending_audio', this.audioBlob);
 	}
 
 	/**
@@ -376,24 +380,20 @@ class Recorder {
 	async loadFromStore() {
 		if (!browser) return;
 		
-		const blob = await db.get<Blob>('pending_audio_blob');
-		const type = await db.get<string>('pending_audio_type');
-
-		if (blob && type) {
-			console.log('📂 Restoring audio from IndexedDB...', blob.size, type);
-			this.audioBlob = new Blob([blob], { type });
-			this.audioUrl = URL.createObjectURL(this.audioBlob);
+		const blob = await db.get<Blob>('pending_audio');
+		if (blob) {
+			console.log('📂 Restoring audio from IndexedDB...');
+			this.audioBlob = blob;
+			this.audioUrl = URL.createObjectURL(blob);
 		}
-		await transcriber.loadFromStore();
 	}
 
 	/**
-	 * Clear the persisted audio from IndexedDB.
+	 * Clears any persisted audio blob from IndexedDB.
 	 */
 	async clearStore() {
-		await db.delete('pending_audio_blob');
-		await db.delete('pending_audio_type');
-		await transcriber.clearStore();
+		await db.delete('pending_audio');
+		transcript.set('');
 	}
 }
 

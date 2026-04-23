@@ -17,7 +17,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
-	import { transcriber } from '$lib/transcriber.svelte';
+	import { transcript } from '$lib/transcript.svelte';
 
 	let { recorder, ondiscard, onsend, error } = $props();
 
@@ -57,7 +57,7 @@
 	async function handleSend() {
 		if (!recorder.audioBlob) return;
 
-		const description = transcriber.transcript?.trim() || 'Voice note recorded with TootCast';
+		const description = $transcript?.trim() || 'Voice note recorded with TootCast';
 		onsend({
 			blob: recorder.audioBlob,
 			visibility,

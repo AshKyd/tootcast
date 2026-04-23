@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { Button, Glow } from 'svelte-akui';
 	import { fade, fly } from 'svelte/transition';
-	import { transcriber as transcriberStore } from '$lib/transcriber.svelte';
-
-	const transcriber = transcriberStore;
+	import { transcript } from '$lib/transcript.svelte';
 
 	let { src } = $props<{ src: string }>();
 
@@ -58,7 +56,7 @@
 		const handleResize = () => {
 			const vv = window.visualViewport;
 			if (!vv) return;
-			
+
 			// If the viewport is nearly full height, the keyboard is likely hidden
 			if (vv.height >= window.innerHeight * 0.9 && isFocused) {
 				isFocused = false;
@@ -76,7 +74,7 @@
 	class="audio-player"
 	class:expanded={isExpanded}
 	class:focused={isFocused}
-	class:has-transcript={transcriber.status !== 'unsupported' || transcriber.transcript}
+	class:has-transcript={true}
 >
 	<Glow />
 	<audio
@@ -97,12 +95,10 @@
 					{/if}
 				</div>
 				<textarea
-					bind:value={transcriber.transcript}
+					bind:value={$transcript}
 					onfocus={handleFocus}
 					onblur={handleBlur}
-					placeholder={transcriber.status === 'unsupported'
-						? 'Speech recognition not supported'
-						: 'No transcript generated...'}
+					placeholder="Add Alt Text / Transcript..."
 					class="transcript-editor"
 					spellcheck="true"
 				></textarea>
