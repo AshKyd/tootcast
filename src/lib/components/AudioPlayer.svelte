@@ -203,10 +203,6 @@
 		padding: 1.5rem;
 	}
 
-	.audio-player.focused {
-		/* Shared focus styles could go here, but mostly we care about mobile */
-	}
-
 	@media (max-width: 640px) {
 		.audio-player.focused {
 			position: fixed;
@@ -321,12 +317,6 @@
 		width: 100%;
 		height: 66px;
 		flex-shrink: 0;
-	}
-
-	.control-group {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
 	}
 
 	.track-area {
