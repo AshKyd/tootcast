@@ -23,9 +23,6 @@ FROM alpine:latest
 # Install Nginx with Brotli support
 RUN apk add --no-cache nginx nginx-mod-http-brotli
 
-# Load Brotli module
-RUN sed -i '1i load_module /usr/lib/nginx/modules/ngx_http_brotli_static_module.so;' /etc/nginx/nginx.conf
-
 # Deploy build artifacts
 RUN mkdir -p /usr/share/nginx/html
 COPY --from=builder /app/build /usr/share/nginx/html
