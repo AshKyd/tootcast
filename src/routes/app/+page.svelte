@@ -22,6 +22,7 @@
 	import DebugConsole from '$lib/components/DebugConsole.svelte';
 	import RecordStep from './RecordStep.svelte';
 	import PlaybackStep from './PlaybackStep.svelte';
+	import TranscriberSetupStep from './TranscriberSetupStep.svelte';
 
 	// App UI State
 	let isSettingsOpen = $state(false);
@@ -56,7 +57,11 @@
 			}
 		}
 	}
-	async function handleSend(data: { blob: Blob; visibility: StatusVisibility; description: string }) {
+	async function handleSend(data: {
+		blob: Blob;
+		visibility: StatusVisibility;
+		description: string;
+	}) {
 		isUploading = true;
 		uploadStatus = 'uploading';
 		error = null;
@@ -94,7 +99,11 @@
 		<MenuButton icon="list" variant="regular" size="small" origin="bottom-right">
 			{#snippet menu()}
 				<MenuItem label="Settings" icon="gear" onclick={() => (isSettingsOpen = true)} />
-				<MenuItem label="Toggle Debug Console" icon="terminal" onclick={() => (isDebugOpen = !isDebugOpen)} />
+				<MenuItem
+					label="Toggle Debug Console"
+					icon="terminal"
+					onclick={() => (isDebugOpen = !isDebugOpen)}
+				/>
 				{#if recorder.audioUrl}
 					<MenuItem
 						label="Download"
@@ -187,12 +196,11 @@
 				</Panel>
 			</div>
 		{:else if recorder.audioUrl}
-			<PlaybackStep
-				{recorder}
-				onsend={handleSend}
-				ondiscard={() => (success = false)}
-				error={error}
-			/>
+			{#if settings.data.whisperModel === 'unset'}
+				<TranscriberSetupStep />
+			{:else}
+				<PlaybackStep {recorder} onsend={handleSend} ondiscard={() => (success = false)} {error} />
+			{/if}
 		{:else}
 			<RecordStep {recorder} {error} />
 		{/if}
