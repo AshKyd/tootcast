@@ -95,29 +95,6 @@
 				<div class="transcript-header">
 					<span>Alt Text (Transcription)</span>
 					<div class="header-actions">
-						{#if settings.data.whisperModel !== 'none'}
-							{#if transcriber.status === 'idle'}
-								<button
-									class="action-btn"
-									onclick={() => recorder.audioBlob && transcriber.transcribe(recorder.audioBlob)}
-								>
-									Create Transcript
-								</button>
-							{:else if transcriber.status === 'error'}
-								<button
-									class="action-btn error"
-									onclick={() => recorder.audioBlob && transcriber.transcribe(recorder.audioBlob)}
-								>
-									Retry Transcription
-								</button>
-							{:else}
-								<span class="status-msg">
-									{transcriber.status === 'loading'
-										? `Downloading... ${Math.round(transcriber.progress)}%`
-										: 'Transcribing...'}
-								</span>
-							{/if}
-						{/if}
 						{#if isFocused}
 							<button class="done-btn" onclick={() => (isFocused = false)}>Done</button>
 						{/if}
@@ -169,15 +146,20 @@
 			</div>
 
 			<div class="control">
-				<Button
-					variant={isExpanded ? 'accent' : 'ghost'}
-					radius="full"
-					iconPosition="only"
-					icon={isFocused ? 'check2' : 'chat-square-text'}
-					size="large"
-					onclick={toggleTranscript}
-					aria-label={isFocused ? 'Done Editing' : 'Toggle Transcript'}
-				></Button>
+				<div class="transcribe-btn-wrapper">
+					<Button
+						variant={isExpanded ? 'accent' : 'ghost'}
+						radius="full"
+						iconPosition="only"
+						icon={isFocused ? 'check2' : 'chat-square-text'}
+						size="large"
+						onclick={toggleTranscript}
+						aria-label={isFocused ? 'Done Editing' : 'Toggle Transcript'}
+					/>
+					{#if transcriber.status === 'transcribing' || transcriber.status === 'loading'}
+						<div class="loading-ring" transition:fade={{ duration: 300 }}></div>
+					{/if}
+				</div>
 			</div>
 		</div>
 	</div>
@@ -294,8 +276,7 @@
 		height: 24px;
 	}
 
-	.done-btn,
-	.action-btn {
+	.done-btn {
 		background: var(--akui-bg-accent);
 		color: white;
 		border: none;
@@ -308,37 +289,8 @@
 		transition: transform 0.1s ease;
 	}
 
-	.action-btn:hover {
+	.done-btn:hover {
 		transform: scale(1.05);
-	}
-
-	.action-btn.error {
-		background: var(--akui-bg-error, #ff4444);
-	}
-
-	.header-actions {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-	}
-
-	.status-msg {
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: var(--akui-bg-accent);
-		animation: pulse 2s infinite;
-	}
-
-	@keyframes pulse {
-		0% {
-			opacity: 0.6;
-		}
-		50% {
-			opacity: 1;
-		}
-		100% {
-			opacity: 0.6;
-		}
 	}
 
 	.transcript-editor {
@@ -427,5 +379,33 @@
 		text-align: right;
 		font-variant-numeric: tabular-nums;
 		height: 0;
+	}
+
+	.transcribe-btn-wrapper {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.loading-ring {
+		position: absolute;
+		inset: -1px;
+		border: 3px solid transparent;
+		border-top-color: var(--color-accent);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+		pointer-events: none;
+		z-index: 10;
+		filter: drop-shadow(0 0 5px var(--color-accent));
+	}
+
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
 	}
 </style>

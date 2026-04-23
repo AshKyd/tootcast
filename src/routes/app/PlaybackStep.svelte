@@ -7,7 +7,10 @@
 		// @ts-ignore - createTooltip is exported but missing from types
 		createTooltip,
 		Padding,
-		InfoBox
+		InfoBox,
+		Modal,
+		Small,
+		Loader
 	} from 'svelte-akui';
 	import { onMount } from 'svelte';
 	import { type StatusVisibility } from '$lib/mastodon';
@@ -18,10 +21,13 @@
 	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
 	import { transcript } from '$lib/transcript.svelte';
+	import { transcriber } from '$lib/transcriber.svelte';
 
 	let { recorder, ondiscard, onsend, error } = $props();
 
 	let visibility = $state<StatusVisibility>(settings.data.defaultVisibility);
+	let isWarningOpen = $state(false);
+	let isWaitingForTranscription = $state(false);
 
 	$effect(() => {
 		if (settings.isLoaded && visibility !== settings.data.defaultVisibility) {
@@ -54,18 +60,64 @@
 		isMouse = window.matchMedia('(hover: hover)').matches;
 	});
 
+	// Auto-trigger transcription reactively
+	$effect(() => {
+		const canTranscribe =
+			settings.data.whisperModel !== 'none' &&
+			settings.data.whisperModel !== 'unset' &&
+			!$transcript &&
+			recorder.audioBlob &&
+			transcriber.status === 'idle';
+
+		if (canTranscribe) {
+			console.log('🤖 PlaybackStep: Auto-triggering transcription…');
+			transcriber.transcribe(recorder.audioBlob!);
+		}
+	});
+
+	// Auto-post when transcription finishes if the user chose to wait
+	$effect(() => {
+		if (isWaitingForTranscription && (transcriber.status === 'idle' || transcriber.status === 'error')) {
+			console.log('🤖 PlaybackStep: Transcription finished while waiting. Posting…');
+			executeSend();
+		}
+	});
+
 	async function handleSend() {
 		if (!recorder.audioBlob) return;
 
+		// Warn if transcription is still running
+		if (transcriber.status === 'transcribing' || transcriber.status === 'loading') {
+			isWarningOpen = true;
+			return;
+		}
+
+		executeSend();
+	}
+
+	function handleWait() {
+		isWarningOpen = false;
+		isWaitingForTranscription = true;
+	}
+
+	function handleCancelWait() {
+		isWarningOpen = false;
+		isWaitingForTranscription = false;
+	}
+
+	function executeSend() {
 		const description = $transcript?.trim() || 'Voice note recorded with TootCast';
 		onsend({
-			blob: recorder.audioBlob,
+			blob: recorder.audioBlob!,
 			visibility,
 			description
 		});
+		isWarningOpen = false;
+		isWaitingForTranscription = false;
 	}
 
 	function handleDiscard() {
+		transcriber.cancel();
 		recorder.discard();
 		ondiscard();
 	}
@@ -158,6 +210,32 @@
 		{/if}
 	</div>
 </div>
+
+{#if isWarningOpen || isWaitingForTranscription}
+	<Modal
+		title={isWaitingForTranscription ? 'Waiting for transcription…' : 'Post without transcription?'}
+		onClose={handleCancelWait}
+	>
+		<Padding size="l">
+			<div style="width: 320px; max-width: 100%;">
+				{#if isWaitingForTranscription}
+					<div class="flex-column items-center gap-m text-center">
+						<Loader size="2rem" />
+						<p>Finishing up your alt text. We'll post automatically in a moment…</p>
+					</div>
+				{:else}
+					<p>Transcription is still in progress. Post now without waiting?</p>
+				{/if}
+			</div>
+		</Padding>
+		{#snippet footer()}
+			{#if !isWaitingForTranscription}
+				<Button label="Post Now" variant="regular" onclick={executeSend} />
+				<Button label="Wait" variant="accent" onclick={handleWait} />
+			{/if}
+		{/snippet}
+	</Modal>
+{/if}
 
 <style>
 	.playback-step {

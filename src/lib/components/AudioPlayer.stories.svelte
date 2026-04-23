@@ -8,7 +8,10 @@
 		component: AudioPlayer,
 		tags: ['autodocs'],
 		args: {
-			src: 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Example.ogg'
+			recorder: {
+				audioUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Example.ogg',
+				audioBlob: new Blob()
+			}
 		}
 	});
 
@@ -16,6 +19,23 @@
 </script>
 
 <Story name="Default" />
+
+<Story
+	name="Transcribing"
+	play={async () => {
+		transcriber.status = 'transcribing';
+	}}
+>
+	{#snippet children(args: any)}
+		<div
+			style="background: #080808; padding: 5rem; display: flex; justify-content: center; align-items: center; min-height: 400px; border-radius: 20px;"
+		>
+			<div style="width: 100%; max-width: 600px;">
+				<AudioPlayer {...args} />
+			</div>
+		</div>
+	{/snippet}
+</Story>
 
 <Story
 	name="With Transcript"

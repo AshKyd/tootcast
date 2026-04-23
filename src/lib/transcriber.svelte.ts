@@ -26,6 +26,17 @@ class Transcriber {
 	progress = $state(0);
 	private instance: any = null;
 	private currentModel: string | null = null;
+	private isCancelled = false;
+
+	/**
+	 * Cancels the current transcription process.
+	 */
+	cancel() {
+		this.isCancelled = true;
+		this.status = 'idle';
+		this.progress = 0;
+		console.log('🛑 Transcriber: Transcription cancelled by user.');
+	}
 
 	/**
 	 * Initializes the transcription pipeline.
@@ -51,6 +62,7 @@ class Transcriber {
 		try {
 			this.instance = await pipeline('automatic-speech-recognition', modelName, {
 				progress_callback: (p: any) => {
+					if (this.isCancelled) return;
 					if (p.status === 'progress') {
 						this.progress = p.progress;
 						// Copious logging as requested
@@ -62,6 +74,7 @@ class Transcriber {
 			});
 			console.log(`✅ Transcriber: Whisper model (${modelName}) ready.`);
 		} catch (err) {
+			if (this.isCancelled) return;
 			console.error(`❌ Transcriber: Failed to load Whisper model (${modelName}):`, err);
 			this.status = 'error';
 			this.currentModel = null;
@@ -74,12 +87,15 @@ class Transcriber {
 	 * @param blob The audio blob (mp3, wav, etc.)
 	 */
 	async transcribe(blob: Blob) {
-		if (!browser) return;
+		if (!browser || this.status === 'loading' || this.status === 'transcribing') return;
 
 		try {
+			this.isCancelled = false;
 			this.status = 'loading';
 			await this.init();
 			
+			if (this.isCancelled) return;
+
 			this.status = 'transcribing';
 			console.log('🎙️ Transcriber: Starting transcription...');
 
@@ -93,6 +109,11 @@ class Transcriber {
 			const arrayBuffer = await blob.arrayBuffer();
 			const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 			
+			if (this.isCancelled) {
+				await audioCtx.close();
+				return;
+			}
+
 			// Use the first channel (mono)
 			const samples = audioBuffer.getChannelData(0);
 			console.log(`🎙️ Transcriber: Audio resampled to 16kHz, length: ${samples.length} samples`);
@@ -104,6 +125,11 @@ class Transcriber {
 				stride_length_s: 5,
 				return_timestamps: false
 			});
+
+			if (this.isCancelled) {
+				await audioCtx.close();
+				return;
+			}
 
 			const text = result.text.trim();
 			console.log('✅ Transcriber: Transcription complete!');
@@ -118,6 +144,7 @@ class Transcriber {
 			// Close context to free memory
 			await audioCtx.close();
 		} catch (err) {
+			if (this.isCancelled) return;
 			console.error('❌ Transcriber: Transcription failed:', err);
 			this.status = 'error';
 		}
